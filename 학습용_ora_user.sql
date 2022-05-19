@@ -545,32 +545,80 @@ SELECT constraint_name, constraint_type, table_name, search_condition
 /*
 연습 문제
 */
---1)
+/*
+1) 주문테이블
+- 테이블 : ORDERS
+- 컬럼 :   ORDER_ID	    NUMBER(12,0)
+           ORDER_DATE   DATE 
+           ORDER_MODE	  VARCHAR2(8 BYTE)
+           CUSTOMER_ID	NUMBER(6,0)
+           ORDER_STATUS	NUMBER(2,0)
+           ORDER_TOTAL	NUMBER(8,2)
+           SALES_REP_ID	NUMBER(6,0)
+           PROMOTION_ID	NUMBER(6,0)
+- 제약사항 : 기본키는 ORDER_ID  
+             ORDER_MODE에는 'direct', 'online'만 입력가능
+             ORDER_TOTAL의 디폴트 값은 0
+*/
 CREATE TABLE ORDERS(
-    ORDER_ID    NUMBER(12,0) PRIMARY KEY,
-    ORDER_DATE  DATE,
-    ORDER_MODE	VARCHAR2(8 BYTE),
-    CUSTOMER_ID	NUMBER(6,0),
+    ORDER_ID        NUMBER(12,0) PRIMARY KEY,
+    ORDER_DATE      DATE,
+    ORDER_MODE	    VARCHAR2(8 BYTE),
+    CUSTOMER_ID	    NUMBER(6,0),
     ORDER_STATUS	NUMBER(2,0),
-    ORDER_TOTAL	NUMBER(8,2) DEFAULT 0,
+    ORDER_TOTAL	    NUMBER(8,2) DEFAULT 0,
     SALES_REP_ID	NUMBER(6,0),
     PROMOTION_ID	NUMBER(6,0),
     CHECK (ORDER_MODE IN('direct', 'online'))
 );
+--입력되나 확인해봄
 INSERT INTO ORDERS VALUES(1, '2022-05-18','direct',1,1,DEFAULT,5,5);
 SELECT * FROM ORDERS;
 --테이블 제약조건 정보 확인
 SELECT constraint_name, constraint_type, table_name, search_condition
   FROM user_constraints
  WHERE table_name = 'ORDERS';
+ 
+--강사님 답 
+--제약조건 설정 : 테이블 수준 제약
+CREATE TABLE ORDERS1(
+    ORDER_ID        NUMBER(12,0),
+    ORDER_DATE      DATE,
+    ORDER_MODE	    VARCHAR2(8 BYTE),
+    CUSTOMER_ID	    NUMBER(6,0),
+    ORDER_STATUS	NUMBER(2,0),
+    ORDER_TOTAL	    NUMBER(8,2) DEFAULT 0,
+    SALES_REP_ID	NUMBER(6,0),
+    PROMOTION_ID	NUMBER(6,0),
+    CONSTRAINTS PK_ORDER  PRIMARY KEY (ORDER_ID),
+    CONSTRAINTS CK_ORDER_MODE CHECK (ORDER_MODE IN('direct', 'online'))
+);
 
---2)
+/*
+2)주문 상세 테이블
+- 테이블 : ORDER_ITEMS 
+- 컬럼 :   ORDER_ID	    NUMBER(12,0)
+           LINE_ITEM_ID NUMBER(3,0) 
+           PRODUCT_ID   NUMBER(3,0) 
+           UNIT_PRICE   NUMBER(8,2) 
+           QUANTITY     NUMBER(8,0)
+- 제약사항 : 기본키는 ORDER_ID와 LINE_ITEM_ID
+             UNIT_PRICE, QUANTITY 의 디폴트 값은 0
+             
+- 복합키를 기본키로 설정할 때 컬럼수준의 제약 방법을 사용하여 해당하는 컬럼마다 PRIMARY KEY를 설정하면 오류가 남
+        ORDER_ID	    NUMBER(12,0) PRIMARY KEY,
+        LINE_ITEM_ID    NUMBER(3,0) PRIMARY J\KEY,
+    - TABLE CAN HAVE ONLY ONE PRIMARY KEY 오류 발생
+    -> 테이블 수준 제약으로 작업
+*/
+-- 단일키: 컬럼1개를 PRIMARY KEY
+-- 복합키: 컬럼 2개 이상을 묶어서 PRIMARY KEY → 테이블 수준 제약
 CREATE TABLE ORDER_ITEMS(
     ORDER_ID	    NUMBER(12,0),
-    LINE_ITEM_ID NUMBER(3,0),
-    PRODUCT_ID   NUMBER(3,0),
-    UNIT_PRICE   NUMBER(8,2) DEFAULT 0,
-    QUANTITY     NUMBER(8,0) DEFAULT 0,
+    LINE_ITEM_ID    NUMBER(3,0),
+    PRODUCT_ID      NUMBER(3,0),
+    UNIT_PRICE      NUMBER(8,2) DEFAULT 0,
+    QUANTITY        NUMBER(8,0) DEFAULT 0,
     PRIMARY KEY(ORDER_ID, LINE_ITEM_ID)
 );
 --테이블 제약조건 정보 확인
@@ -578,7 +626,16 @@ SELECT constraint_name, constraint_type, table_name, search_condition
   FROM user_constraints
  WHERE table_name = 'ORDER_ITEMS';
  
---3)
+ --데이터 입력
+ INSERT INTO ORDER_ITEMS(ORDER_ID, LINE_ITEM_ID, PRODUCT_ID) VALUES(921019,32, 10);
+ SELECT * FROM ORDER_ITEMS;
+/*
+3)
+- 테이블 : PROMOTIONS
+- 컬럼 :   PROMO_ID	    NUMBER(6,0)
+           PROMO_NAME   VARCHAR2(20) 
+- 제약사항 : 기본키는 PROMO_ID
+*/
 CREATE TABLE PROMOTIONS(
     PROMO_ID	    NUMBER(6,0) PRIMARY KEY,
     PROMO_NAME   VARCHAR2(20)
@@ -587,3 +644,404 @@ CREATE TABLE PROMOTIONS(
 SELECT constraint_name, constraint_type, table_name, search_condition
   FROM user_constraints
  WHERE table_name = 'PROMOTIONS';
+ 
+ --강사님 답
+ CREATE TABLE PROMOTIONS1(
+    PROMO_ID	    NUMBER(6,0) CONSTRAINTS PK_PROMOTIONS PRIMARY KEY,
+    PROMO_NAME   VARCHAR2(20)
+);
+ CREATE TABLE PROMOTIONS2(
+    PROMO_ID	    NUMBER(6,0),
+    PROMO_NAME   VARCHAR2(20),
+     CONSTRAINTS PK_PROMOTIONS PRIMARY KEY(PROMO_ID)
+);
+
+
+
+-----------------------------------------------------------------------------
+--20220519
+/*
+시퀀스(SEQUENCE) : 자동 일련번호 생성하는 기능
+
+시퀀스 명령어
+1) 시퀀스명.NEXTVAL : INCREMENT BY 값 적용되어 증가 혹은 감소(마이너스 값이라면)
+2) 시퀀스명.CURRVAL : 현재 상태 값
+*/
+--스키마
+ CREATE TABLE 스키마.PROMOTIONS2(
+    COL1    VARCHAR2(10)
+);
+ CREATE TABLE ora_user.PROMOTIONS2(
+    COL1    VARCHAR2(10)
+);
+
+CREATE SEQUENCE my_seq1; -- 값 1씩 증가하는 특징
+--시퀀스명.NEXTVAL : INCREMENT_BY 설정 적용
+SELECT MY_SEQ1.nextval FROM DUAL;
+--시퀀스명.CURRVAL : 현재 시퀀스 값 읽기
+SELECT my_seq1.CURRVAL FROM DUAL;
+--시퀀스 삭제
+DROP SEQUENCE my_seq1;
+
+--옵션 추가 시퀀스 생성
+CREATE SEQUENCE my_seq1
+INCREMENT BY 1
+START WITH 1
+MINVALUE 1
+MAXVALUE 1000
+NOCYCLE
+NOCACHE;
+--시퀀스 값 증가
+SELECT my_seq1.nextval FROM DUAL;
+
+--지우고 다시 생성
+CREATE SEQUENCE my_seq1
+INCREMENT BY 1
+START WITH 100;
+
+CREATE SEQUENCE my_seq2
+INCREMENT BY 10 --음수값도 가능
+START WITH 100;
+
+CREATE SEQUENCE my_seq3;
+--my_seq3.NEXTVAL 명령어가 최소 1번 적용된 후에 사용해야 함
+--먼저 my_seq3.CURRVAL 명령어 사용시 에러 발생
+--08002. 00000 -  "sequence %s.CURRVAL is not yet defined in this session"
+--INCREMENT BY 적용된 값을 확인하기 위함
+SELECT my_seq3.CURRVAL FROM DUAL;
+
+--시퀀스를 사용하기 위한 테이블
+CREATE TABLE ex2_11_seq (
+    COL1    NUMBER  PRIMARY KEY
+);
+CREATE SEQUENCE seq_ex2_11_seq;
+
+--시퀀스를 이용한 데이터 입력
+INSERT INTO ex2_11_seq(COL1) VALUES(seq_ex2_11_seq.NEXTVAL);
+--INCREMENT BY 적용 시켜서 나오는 반환값을 COL1에 삽입
+SELECT * FROM ex2_11_seq;]
+
+--현재 번호 출력
+SELECT seq_ex2_11_seq.CURRVAL FROM DUAL;
+
+/*
+DML : SELECT, INSERT, UPDATE, DELETE 
+*/
+/*
+기본 구조, 사용 순서 변경 X
+SELECT 컬럼명, ...
+FROM 테이블명
+WHERE 조건식
+ORDER BY 정렬
+
+동작순서
+1) FROM 테이블명 : 메모리상에 테이블명의 모든 컬럼의 데이터가 로딩 예> 100개 데이터 행
+2) WHERW 조건식 : 메모리의 100개의 데이터 중 조건에 해당하는 데이터 추출
+3) ORDER BY : 정렬 명령어를 사용하여, 메모리의 데이터를 정렬
+4) SELECT 컬럼명1, 컬럼명2, ... : SELECT 절에서 언급한 컬럼을 출력(조회)
+*/
+
+--EMPLOYEES 테이블의 모든 데이터를 출력(조회)하라
+
+-- * : 테이블의 모든 컬럼명을 의미, 개발 시 코드에 사용은 하지 않는다(성능이 안좋음)
+SELECT * FROM EMPLOYEES;
+--접속의 EMPLOYEES 테이블의 모든 컬럼 끌어오기
+SELECT employee_id, EMP_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, SALARY, MANAGER_ID, COMMISSION_PCT, RETIRE_DATE, DEPARTMENT_ID, JOB_ID, CREATE_DATE, UPDATE_DATE
+FROM EMPLOYEES;
+
+--일반 작업 시 스키마 명은 생략한다. 예) ORA_USER.EMPLOYEES
+--접속 시 사용한 계정명이 스키마명으로 사용되기 때문에
+
+--현재 ORA_USER 사용자이므로 동일한 구문
+--1)스키마 명 생략
+SELECT employee_id, EMP_NAME FROM EMPLOYEES;
+--2) 스키마 명 사용
+SELECT EMP_NAME, employee_id, SALARY  FROM ORA_USER.EMPLOYEES; --순서바꾸기
+
+--연산 가능
+--EMPLOYEES 테이블의 연봉을 2배 인상 시 결과 출력
+SELECT employee_id, EMP_NAME, SALARY, SALARY * 2, SALARY * 0.7, SALARY - (SALARY * 0.3)
+FROM EMPLOYEES;
+
+--문자열 연결 연산자 : ||
+--별칭 지정 : AS
+SELECT EMP_NAME ||  '   ' || employee_id || '   :    ' || SALARY AS PROFILE
+FROM EMPLOYEES;
+
+--질의(QUERY) 내용 : 사원테이블에서 급여(연봉)이 5000보다 큰 데이터 조회
+SELECT *
+FROM EMPLOYEES --107건
+WHERE SALARY > 5000; --58건
+
+--ORDER BY : 정렬
+/*
+1)컬럼 1개 지정
+오름 차순 : ORDER BY 컬럼명 ASC;
+내림차순 ORDER BY 컬럼명 DESC;
+
+2)컬럼 2개 지정
+ORDER BY 컬럼명1 ASC, 컬럼명2 DESC;
+*/
+--EMPLOYEE_ID 오름차순 정렬
+SELECT *
+FROM EMPLOYEES --107건
+WHERE SALARY > 5000 --58건
+ORDER BY EMPLOYEE_ID; --ORDER BY EMPLOYEE_ID ASC;
+--EMP_NAME 오름차순 정렬
+SELECT *
+FROM EMPLOYEES --107건
+WHERE SALARY > 5000 --58건
+ORDER BY EMP_NAME;
+
+--부서ID 오름차순 정렬
+SELECT emp_name, DEPARTMENT_ID, SALARY
+FROM EMPLOYEES --107건
+WHERE SALARY > 5000 --58건
+ORDER BY DEPARTMENT_ID;
+
+--부서ID 오름차순 정렬, SALARY 내림차순 정렬
+--부서ID 먼저 오름차순으로 정렬 후 같은 부서ID 중에서 SALARY로 내림차순 정렬
+SELECT emp_name, DEPARTMENT_ID, SALARY
+FROM EMPLOYEES --107건
+WHERE SALARY > 5000 --58건
+ORDER BY DEPARTMENT_ID,SALARY DESC ;
+
+--복수 조건
+/*
+AND
+OR
+*/
+--SALARYRY 5000이상이고 JOB_ID가 'IT_PROG'인 사원을 조회
+SELECT *
+FROM EMPLOYEES
+WHERE SALARY >= 5000 AND JOB_ID = 'IT_PROG';
+--SALARYRY 5000이상이거나 JOB_ID가 'IT_PROG'인 사원을 조회
+SELECT *
+FROM EMPLOYEES
+WHERE SALARY >= 5000 OR JOB_ID = 'IT_PROG';
+
+--컬럼 별칭
+SELECT employee_id AS 사원번호, EMP_NAME AS 사원명
+FROM EMPLOYEES;
+
+SELECT employee_id AS 사 원 번 호, EMP_NAME AS 사 원 명
+FROM EMPLOYEES;--에러
+SELECT employee_id AS "사 원 번 호", EMP_NAME AS "사 원 명"
+FROM EMPLOYEES;
+
+--1)테이블명.컬럼명
+SELECT EMPLOYEES.employee_id, EMPLOYEES.EMP_NAME
+FROM EMPLOYEES;
+--2)테이블명 생략
+SELECT employee_id, EMP_NAME
+FROM EMPLOYEES; 
+
+--INSERT 문 : 테이블에 데이터 입력
+CREATE TABLE ex3_1 (
+    COL1    VARCHAR2(10)    NULL, --NULL 생략 가능
+    COL2    NUMBER  NULL,
+    COL3    DATE    NULL
+);
+--컬럼은 테이블의 작성한 순서대로
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('ABC',10, SYSDATE); --오라클의 날짜함수 : SYSDATE
+--순서 바꿔도 되긴 함, 입력 컬럼명의 순서는 변경 가능
+INSERT INTO ex3_1( COL2,col1, COL3) VALUES(27,'DEF', SYSDATE);
+--입력하는 값이 컬럼의 데이터타입과 일치해야 함
+INSERT INTO ex3_1(COL3, col1, COL2 ) VALUES ('ABC',10, 30);-- 에러
+
+--컬럼명 생략 시 모든 컬럼명을 가리킴
+INSERT INTO ex3_1 VALUES('GHI',10, SYSDATE);
+--컬럼명 일부를 생략한 경우 : 컬럼이 NULL설정 OR 컬럼이 DEFAULT일 경우
+--COL3이 생략 가능한 이유? COL3 DATE NULL
+INSERT INTO ex3_1(COL1, COL2) VALUES('GHI',21);
+SELECT * FROM ex3_1;
+--INSERT 문의 기본 규칙 : 컬럼의 개수와 값이 일치해야 하고, 값이 컬럼의 데이터 타입이 동일해야 한다
+
+--값에 NULL사용 : 컬럼의 NULL설정을 그대로 적용
+INSERT INTO ex3_1 VALUES(NULL, NULL, NULL);
+--날짜형식의 문자열데이터를 날짜데이터로 사용가능
+/*
+VALUES(10,'10','2022-05-19')
+    10 -> '10' : COL1컬럼은 VARCHAR2(10)
+    '10' -> 10 : COL2컬럼은 NUMBER
+    '2022-05-19' -> 날짜타입으로 변환 : COL3컬럼은 DATE
+*/
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES(10,'10','2022-05-19');
+
+
+--테이블 복사 : PRIMARY KEY는 복사대상에서 제외
+--테이블을 새로 생성
+CREATE TABLE EMPLOYEES_TEMP
+AS
+SELECT * FROM EMPLOYEES;
+/*
+INSERT~SELECT문
+기존에 존재하는 테이블에 다수의 데이터 삽입
+*/
+CREATE TABLE ex3_2(
+    EMP_ID  NUMBER,
+    EMP_NAME    VARCHAR2(100)
+);
+--ex3_2테이블에 EMPLOYEES에서 연봉이 5000보다 큰 데이터를 사원번호, 사원이름의 데이터만 삽입
+INSERT INTO ex3_2(EMP_ID, EMP_NAME)
+SELECT employee_id, EMP_NAME
+FROM EMPLOYEES
+WHERE SALARY > 5000;
+
+
+--UPDATE문
+--테이블의 데이터를 수정할 때 사용하는 명령어
+SELECT * FROM ex3_1;
+
+--WHERE절 제외하면 테이블의 모든 데이터를 대상으로 변경
+UPDATE ex3_1
+SET COL2 = 50; --COL1의 데이터를 전부 50으로 변경
+
+UPDATE ex3_1
+    SET COL2 = 10, COL3 = '2022-05-20'
+WHERE COL1 = 'GHI'; 
+
+--COL3컬럼이 NULL인 데이터를 조회
+--잘못된 예
+SELECT *
+FROM ex3_1
+WHERE COL3 = ''; --오라클에서 ''는 NULL의 의미지만 조건식에서는 NULL이 아님
+--NULL조회는 IS NULL
+SELECT *
+FROM ex3_1
+WHERE COL3 IS NULL;
+--COL3컬럼에 데이터가 존재하는 것 : IS NOT NULL
+SELECT *
+FROM ex3_1
+WHERE COL3 IS NOT NULL;
+
+/*
+DELETE : 테이블의 데이타 삭제
+
+DELETE 테이블명
+WHERE 조건식
+*/
+SELECT * FROM ex3_1;
+
+DELETE ex3_1; --테이블의 모든 데이터 삭제!!!!!!!! 주의!!!!!!!!!!!!!!!
+
+DELETE ex3_1
+WHERE COL1 = '10';
+
+
+--테이블에 INSERT, UPDATE, DELETE 작업은 임시상태에서 진행
+--물리적으로 DOCMALL.DBF 파일에 적용이 안된 상태
+
+--테이블의 임시상태에 있는 INSERT, UPDATE, DELETE 작업을 모두 취소
+ROLLBACK;
+--테이블의 임시상태에 있는 INSERT, UPDATE, DELETE 작업을 모두 반영
+COMMIT;
+
+--COMMIT과 ROLLBACK을 테스트하기 위한 데이터 작업
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('ABC',10, SYSDATE);
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('DEF',20, SYSDATE);
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('ABC',30, SYSDATE);
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('DEF',40, SYSDATE);
+INSERT INTO ex3_1(col1, COL2, COL3) VALUES('GHI',50, SYSDATE);
+
+COMMIT;
+--물리적으로 반영 완
+SELECT * FROM ex3_1;
+
+DELETE ex3_1;
+--삭제완 -> 임시작업
+SELECT * FROM ex3_1;
+--삭제된거 확인
+
+ROLLBACK;
+--COMMIT작업 이후의 최신작업을 취소시켜주는 것
+SELECT * FROM ex3_1;
+
+COMMIT; --물리적으로 반영
+
+/*
+TRUNCATE TABLE 테이블명: 테이블의 모든 데이터를 삭제시키는 효과(인식을 못하게 한다)
+                        ROLLBACK 명령어 의미 X (로그에 기록 X여서)
+DELETE 테이블명 : 테이블의 모든 데이터를 삭제
+*/
+TRUNCATE TABLE ex3_1;
+
+SELECT * FROM EMPLOYEES;
+
+/*
+의사컬럼(Pseudo-column)
+테이블에 존재하지 않는다
+테이블의 컬럼처럼 동작하는 특징이 있다
+SELECT문에서 사용할 수 있지만 INSERT, UPDATE, DELETE문은 사용할 수 없다.
+*/
+--ROWNUM : 테이블에 공통적으로 사용 가능, 데이터의 인덱스(일련번호)를 차례대로 부여하는 특징
+SELECT ROWNUM, employee_id, EMP_NAME 
+FROM EMPLOYEES;
+
+SELECT ROWNUM, employee_id, EMP_NAME 
+FROM EMPLOYEES
+WHERE SALARY > 10000;
+
+SELECT employee_id, EMP_NAME 
+FROM EMPLOYEES
+WHERE ROWNUM <= 5;
+
+--ROWID : 테이블에 저장된 각 로우(행, 실제 데이터)에 저장된 주소값을 가리키는 의사컬럼
+SELECT employee_id, EMP_NAME, ROWID
+FROM EMPLOYEES
+WHERE ROWNUM <= 5;
+
+/*
+WHERE 조건식
+ANY, ALL, SOME
+*/
+--1)ANY : 어떤 것이든
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY = ANY(2000, 3000, 4000)
+ORDER BY employee_id;
+--2)
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY = IN(2000, 3000, 4000)
+ORDER BY employee_id;
+--3)
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY = 2000 OR SALARY = 3000 OR SALARY = 4000
+ORDER BY employee_id;
+
+--4) SOME
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY = SOME(2000, 3000, 4000)
+ORDER BY employee_id;
+
+--ALL은 AND 조건으로 변환 할 수 있음
+--모든 조건을 동시에 만족해야 함
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY = ALL(2000, 3000, 4000)
+ORDER BY employee_id;
+
+--BETWEEN A AND B (조건식)
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY BETWEEN 2000 AND 4000
+ORDER BY employee_id;
+--AND로 변환 가능
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY >= 2000 AND SALARY <= 4000
+ORDER BY employee_id;
+
+--NOT 조건식
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE NOT (SALARY >= 2500)
+ORDER BY employee_id;
+--아래와 같음
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY < 2500
+ORDER BY employee_id;
