@@ -1045,3 +1045,437 @@ SELECT employee_id, SALARY
 FROM EMPLOYEES
 WHERE SALARY < 2500
 ORDER BY employee_id;
+
+
+--================================================================================
+--20220520
+--ANY 2-1)
+SELECT employee_id, SALARY
+FROM EMPLOYEES
+WHERE SALARY NOT IN(2000, 3000, 4000)
+ORDER BY employee_id;
+
+-- 표현식
+/*
+CASE구문
+유형1>
+CASE 대상값 
+    WHEN 값1 THEN 결과1 
+    WHEN 값2 THEN 결과2 . . . 
+    WHEN 값n THEN 결과m 
+    ELSE 결과
+END;
+
+유형2>
+CASE 
+    WHEN 조건1 THEN 결과1 
+    WHEN 조건2 THEN 결과2 . . . 
+    WHEN 조건3 THEN 결과m 
+    ELSE 결과
+END;
+*/
+--유형1
+SELECT employee_id, JOB_ID,
+    CASE JOB_ID
+        WHEN 'IT_PROG' THEN 'Programmer'
+        WHEN 'MK_MAN' THEN 'Marketing Manager'
+        WHEN 'HR_REP' THEN 'Human Resources Representative'
+        ELSE 'ETC'
+    END AS 업무이름 --데이터가 아니고 컬럼명이라 '' 하면 안됨 혹은 "업무 이름" 이렇게 
+FROM EMPLOYEES;
+
+/*유형2
+사원 테이블에서 각 사원의 급여에 따라 
+   5000 이하로 급여를 받는 사원은 C, 
+   5000~15000은 B, 
+   15000 이상은 A등급을 
+   반환하는 쿼리를 작성해 보자.
+*/
+SELECT EMPLOYEE_ID, SALARY,
+    CASE WHEN SALARY <= 5000 THEN 'C등급'
+         WHEN SALARY > 5000 AND SALARY <= 15000 THEN 'B등급'
+         ELSE 'A등급'
+    END AS SALARY_GRADE
+FROM EMPLOYEES;
+
+--LIKE
+/*
+구문형식
+WHERE 컬럼명 LIKE '문자열패턴'
+컬럼명이 문자열 데이터타입이어야 함(CHAR, VARCHAR2)
+단, CLOB는 사용할 수 가 없다
+*/
+--사원테이블에서 사원이름이 ‘A’로 시작되는 사원 조회
+SELECT EMP_NAME
+FROM EMPLOYEES
+WHERE EMP_NAME LIKE 'A%'; -- % : 0개 이상의 문자열 WHERE EMP_NAME LIKE 'A'도 포함(A한글자만도 포함)
+SELECT EMP_NAME
+FROM EMPLOYEES
+WHERE EMP_NAME LIKE 'Al%'; --'Al'포함
+
+--  _ : 1개의 문자
+--예) 'A__B' : 길이가 4이어야 하고 1번째 글자는 A, 2,3번째 글자는 상관 없고 4번째글자는 B
+SELECT EMP_NAME
+FROM EMPLOYEES
+WHERE EMP_NAME LIKE 'Al_x%'; --3번째 위치에 _ (언더바)의 의미는 언더바 위치에 어떤 1개의 문자가 와도 상관 없다
+
+--샘플 데이터
+CREATE TABLE ex3_5 (
+    NAMES VARCHAR2(30)
+);
+INSERT INTO ex3_5 VALUES('김지');
+INSERT INTO ex3_5 VALUES('김지원');
+INSERT INTO ex3_5 VALUES('김지투');
+INSERT INTO ex3_5 VALUES('김지삼');
+INSERT INTO ex3_5 VALUES('김지삼사');
+
+SELECT * FROM ex3_5;
+
+--이름이 '김지'로 시작하는 이름을 조회하라
+SELECT * FROM ex3_5
+WHERE NAMES LIKE '김지%';
+
+--이름이 '김지'로 시작하는 이름이 3자인 경우만 조회
+SELECT * FROM ex3_5
+WHERE NAMES LIKE '김지_';
+
+--이름이 '김지' 라는 단어가 존재하는 데이터를 조회하라
+SELECT * FROM ex3_5
+WHERE NAMES LIKE '%김지%';
+
+--이름이 '김지' 라는 단어로 끝나는 데이터를 조회하라
+SELECT * FROM ex3_5
+WHERE NAMES LIKE '%김지';
+
+/*
+CLOB 대용량 데이터타입 : 성능 이슈, 자료확인 권장
+*/
+CREATE TABLE ex3_5_2(
+    NAMES CLOB --4GB 대용량 데이터 타입
+);
+INSERT INTO ex3_5_2 VALUES('김지');
+INSERT INTO ex3_5_2 VALUES('김지원');
+INSERT INTO ex3_5_2 VALUES('김지투');
+INSERT INTO ex3_5_2 VALUES('김지삼');
+INSERT INTO ex3_5_2 VALUES('김지삼사');
+
+SELECT * FROM ex3_5_2;
+
+SELECT * FROM ex3_5_2
+WHERE NAMES LIKE '김지%';
+
+--ORDER BY 정렬: 지원 안됨
+SELECT * FROM ex3_5_2
+ORDER BY NAMES;
+
+SELECT LENGTH(NAMES) FROM ex3_5_2; --문자열 길이 -> 가능
+SELECT LENGTHB(NAMES) FROM ex3_5_2; --데이터 크기 -> 불가능
+--22998. 00000 -  "CLOB or NCLOB in multibyte character set not supported"
+
+-- 오류남. 4GB를 한건한건 중복 비교 못함 ㅎ
+CREATE TABLE ex3_5_2(
+    NAMES CLOB PRIMARY KEY --4GB 대용량 데이터 타입
+);
+
+/*
+오라클 함수
+1) 숫자 함수란 수식 연산을 하는 연산을 하는 함수로 연산 대상 즉, 매개변수나 반환 값이 대부분 숫자 형태
+*/
+--DUAL 테이블
+--SELECT문 사용시 문법적이 구조를 맞추기 위하여 사용하는 특수한 테이블
+SELECT 10 + 20 FROM DUAL;
+
+/*
+① ABS(n)
+ABS 함수는 매개변수로 숫자를 받아 그 절대값을 반환하는 함수다.
+*/
+SELECT ABS(10), ABS(-10), ABS(-10.23) FROM DUAL;
+
+/*
+② CEIL(n) :올림함수 과 FLOOR(n):내림함수
+CEIL 함수는 매개변수 n과 같거나 가장 큰 정수를 반환한다.
+*/
+SELECT CEIL(10.123), CEIL(10.541), CEIL(11.001), CEIL(11.000) FROM DUAL;
+SELECT FLOOR(10.123), FLOOR(10.541), FLOOR(11.001), FLOOR(11.000) FROM DUAL;
+
+/*
+③ ROUND(n, i)와 TRUNC(n1, n2)
+ROUND 함수는 매개변수 n을 소수점 기준 (i+1)번 째에서 반올림한 결과를 반환한다. 
+i는 생략할 수 있고 디폴트 값은 0, 즉 소수점 첫 번째 자리에서 반올림이 일어나 정수 부분의 일의 자리에 결과가 반영된다.
+*/
+--기본(소수 첫째자리에서 반올림하여 정수부분에 반영)
+SELECT ROUND(10.154), ROUND(10.541), ROUND(11.001) FROM DUAL;
+--2번째 파라미터가 양수인 경우, 소수자리를 지정하여 반올림 반영
+SELECT ROUND(10.154, 1), ROUND(10.541, 2), ROUND(10.154, 3) FROM DUAL;
+--2번째 파라미터가 음수인 경우, 정수자리를 지정하여 반올림 체크
+SELECT ROUND(0, 3), ROUND(115.155, -1), ROUND(115.115, -2) FROM DUAL;
+
+--지정한 자리수 이후를 절삭 : TRUNC
+SELECT TRUNC(115.155), TRUNC(115.155, -1), TRUNC(115.155, 2), TRUNC(115.155, -2) FROM DUAL;
+
+--제곱근
+--      3의 2승       3의 3승
+SELECT POWER(3, 2), POWER(3, 3), POWER(3, 3.0001)
+  FROM DUAL;  
+--에러
+SELECT POWER(-3, 3.0001) FROM DUAL;  
+--루트
+SELECT SQRT(2), SQRT(5)
+  FROM DUAL;
+  
+  /*
+ REMAINDER 함수 역시 n2를 n1으로 나눈 나머지 값을 반환하는데, 
+ 나머지를 구하는 내부적 연산 방법이 MOD 함수와는 약간 다르다.
+
+? MOD → n2 - n1 * FLOOR (n2/n1)
+
+? REMAINDER → n2 - n1 * ROUND (n2/n1)
+ */
+SELECT MOD(19,4), MOD(19.123, 4.2) FROM DUAL;
+SELECT REMAINDER(19,4), REMAINDER(19.123, 4.2) FROM DUAL;
+
+SELECT REMAINDER(18,4) FROM DUAL;
+
+/*
+문자함수
+① INITCAP(char), LOWER(char), UPPER(char)
+INITCAP 함수는 매개변수로 들어오는 char의 첫 문자는 대문자로, 나머지는 소문자로 반환하는 함수다.
+*/
+SELECT INITCAP('never say goodbye'), INITCAP('never6say*good가bye') FROM DUAL;
+SELECT LOWER('NEVER SAY GOODBYE'), UPPER('never say goodbye') FROM DUAL;
+--컬럼명 넣음
+SELECT EMP_NAME, LOWER(EMP_NAME) FROM EMPLOYEES;
+
+/*
+CONCAT(char1, char2), SUBSTR(char, pos, len), SUBSTRB(char, pos, len)
+CONCAT 함수는 ‘||’ 연산자처럼 매개변수로 들어오는 두 문자를 붙여 반환한다.
+*/
+-- CONCAT 함수는 ‘||’ 연산자처럼 매개변수로 들어오는 두 문자를 붙여 반환한다.  
+-- 매개변수가 2개만 지원
+SELECT CONCAT('I Have', ' A Dream'), 'I Have' || ' A Dream' || '!!!' FROM DUAL;
+
+SELECT SUBSTR('ABCD EFG', 1, 4) FROM DUAL;
+SELECT SUBSTR('ABCDEFT', 1, 4), SUBSTR('ABCDEFG', -2, 4) FROM DUAL;
+
+SELECT LENGTHB('홍') FROM DUAL;
+SELECT SUBSTRB('ABCDEFG', 1, 4), SUBSTRB('가나다라마바사',1, 4) FROM DUAL;
+
+/*
+③ LTRIM(char, set), RTRIM(char, set)
+LTRIM 함수는 매개변수로 들어온 char 문자열에서 set으로 지정된 문자열을 왼쪽 끝에서 제거한 후 나머지 문자열을 반환한다.
+두 번째 매개변수인 set은 생략할 수 있으며, 디폴트로 공백 문자 한 글자가 사용된다. 
+RTRIM 함수는 LTRIM 함수와 반대로 오른쪽 끝에서 제거한 뒤 나머지 문자열을 반환한다.
+*/
+--1) 좌측, 우측 공백제거
+SELECT LENGTH('     ABCDEF'), LENGTH('ABCDEF     ') FROM DUAL;
+SELECT LENGTH(LTRIM('     ABCDEF')), LENGTH(RTRIM('ABCDEF     ')) FROM DUAL;
+
+--2)두 번째 파라미터를 좌측 또는 우측에서 제거한 나머지를 반환
+SELECT
+    LTRIM('ABCDEFGABC' ,'ABC'),
+    LTRIM('가나다라', '가'),
+    RTRIM('ABCDEFGABC', 'ABC'),
+    RTRIM('가나다라', '라')
+FROM DUAL;
+
+--제거할 수 있는 구조가 아니어서 자신이 반환
+SLELECT LTRIM('가나다라', '나'), RTRIM('가나다라','나') FROM DUAL;
+
+/*
+④ LPAD(expr1, n, expr2), RPAD(expr1, n, expr2)
+LPAD 함수는 매개변수로 들어온 expr2 문자열(생략할 때 디폴트는 공백 한 문자)을 n자리만큼 왼쪽부터 채워 expr1을 반환하는 함수다. 
+매개변수 n은 expr2와 expr1이 합쳐져 반환되는 총 자릿수를 의미한다.
+*/
+CREATE TABLE ex4_1 (
+    phone_num VARCHAR2(30)
+);
+
+INSERT INTO ex4_1 VALUES('111-1111');
+INSERT INTO ex4_1 VALUES('111-2222');
+INSERT INTO ex4_1 VALUES('111-3333');
+
+SELECT * FROM ex4_1;
+--지역번호를 추가하겠다
+SELECT LPAD(phone_num, 12, '(02)') FROM ex4_1; --phone_num컬럼의 데이터를 12자리로 표현하는데 남은 4자리는 (02)로 채워라
+SELECT RPAD(phone_num, 12, '(02)') FROM ex4_1;
+
+/*
+⑤ REPLACE(char, search_str, replace_str), TRANSLATE(expr, FROM_str, to_str)
+REPLACE 함수는 char 문자열에서 search_str 문자열을 찾아 이를 replace_str 문자열로 대체한 결과를 반환하는 함수다.
+TRANSLATE 함수는 REPLACE와 유사하다. expr 문자열에서 FROM_str에 해당하는 문자를 찾아 to_str로 바꾼 결과를 반환
+*/
+SELECT REPLACE('나는 너를 모르는데 너는 나를 알겠는가?', '나','너') FROM DUAL;
+--'나'를 검색해서 '너'로 바꿈
+SELECT 
+    LTRIM(' ABC DEF '),
+    RTRIM(' ABC DEF '),
+    REPLACE(' ABC DEF ', ' ', '')
+FROM DUAL;
+
+--TRANSLATE : 문자열 자체가 아닌 문자 한 글자씩 매핑해 바꾼 결과를 반환
+--REPLACE : 단어별(문자열) 검색하여 바꾸기(문자열을 하나로 묶어서 찾기)
+--TRANSLATE : 문자 1개씩 각각 찾아서 대응하는 바꾸기
+SELECT REPLACE('나는 너를 모르는데 너는 나를 알겠는가?', '나는', '너를') AS rep,
+       TRANSLATE('나는 너를 모르는데 너는 나를 알겠는가?', '나는', '너를') AS trn
+  FROM DUAL;
+
+
+/*
+⑥ INSTR(str, substr, pos, occur), LENGTH(chr), LENGTHB(chr)
+INSTR 함수는 str 문자열에서 substr과 일치하는 위치를 반환하는데, pos는 시작 위치로 디폴트 값은 1, occur은 몇 번째 일치하는지를 명시하며 디폴트 값은 1이다.
+*/
+SELECT 
+    INSTR('내가 만약 외로울 때만, 내가 만약 괴로울 때면, 내가 만약 즐거울 때면', '만약에') AS INSTR, --0
+    INSTR('내가 만약 외로울 때만, 내가 만약 괴로울 때면, 내가 만약 즐거울 때면', '만약') AS INSTR1, --4
+    INSTR('내가 만약 외로울 때만, 내가 만약 괴로울 때면, 내가 만약 즐거울 때면', '만약', 5) AS INSTR2,-- 18 - 문자열 5번째 위치에서 검색시작
+    INSTR('내가 만약 외로울 때만, 내가 만약 괴로울 때면, 내가 만약 즐거울 때면', '만약', 5, 2) AS INSTR3 --32 - 문자열 5번쨰 위치에서검색 시작, 2번쨰 일치되는 문자열
+FROM DUAL;
+
+/*날짜함수
+① SYSDATE, SYSTIMESTAMP
+SYSDATE와 SYSTIMESTAMP는 현재일자와 시간을 각각 DATE, TIMESTAMP 형으로 반환한다.
+*/
+SELECT SYSDATE, SYSTIMESTAMP FROM DUAL;
+
+CREATE TABLE TEST (
+    COL1    DATE,
+    COL2    TIMESTAMP
+);
+
+INSERT INTO TEST VALUES(SYSDATE, SYSTIMESTAMP);
+
+SELECT * FROM TEST;
+
+/*
+② ADD_MONTHS (date, integer)
+ADD_MONTHS 함수는 매개변수로 들어온 날짜에 interger 만큼의 월을 더한 날짜를 반환한다.
+*/
+SELECT SYSDATE, ADD_MONTHS(SYSDATE, 1), ADD_MONTHS(SYSDATE, -1) FROM DUAL;
+
+/*
+③ MONTHS_BETWEEN(date1, date2)
+MONTHS_BETWEEN 함수는 두 날짜 사이의 개월 수를 반환하는데, date2가 date1보다 빠른 날짜가 온다.
+*/
+SELECT
+    MONTHS_BETWEEN(SYSDATE, ADD_MONTHS(SYSDATE, 1)) Mon1,
+    MONTHS_BETWEEN(ADD_MONTHS(SYSDATE, 1), SYSDATE) MON2
+FROM DUAL;
+
+/*
+④ LAST_DAY(date)
+LAST_DAY는 date 날짜를 기준으로 해당 월의 마지막 일자를 반환한다.
+*/
+SELECT LAST_DAY(SYSDATE), LAST_DAY('2020-08-01') FROM DUAL;
+
+/*
+⑤ ROUND(date, format), TRUNC(date, format)
+ROUND와 TRUNC는 숫자 함수이면서 날짜 함수로도 쓰이는데, ROUND는 format에 따라 반올림한 날짜를, TRUNC는 잘라낸 날짜를 반환한다.
+*/
+SELECT SYSDATE, ROUND(SYSDATE, 'month'), TRUNC(SYSDATE, 'month') FROM DUAL;
+
+--날짜 데이터도 반올림(ROUND), 절삭(TRUNC)할 수가 있다.
+--날짜 데이터가 15일 반올림 안됨, 16일 이상이면 반올림
+SELECT 
+    ROUND(TO_DATE('2022-05-15'), 'month'), 
+    ROUND(TO_DATE('2022-05-16'), 'month'), 
+    TRUNC(TO_DATE('2022-05-15'), 'month') 
+FROM DUAL;
+
+/*
+⑥ NEXT_DAY (date, char)
+NEXT_DAY는 date를 char에 명시한 날짜로 다음 주 주중 일자를 반환한다.
+*/
+SELECT NEXT_DAY(SYSDATE, '금요일') FROM DUAL;
+
+/*
+형변환 함수
+① TO_CHAR (숫자 혹은 날짜, format)
+숫자나 날짜를 문자로 변환해 주는 함수가 바로 TO_CHAR로, 매개변수로는 숫자나 날짜가 올 수 있고 반환 결과를 특정 형식에 맞게 출력할 수 있다
+*/
+SELECT TO_CHAR(123456789) FROM DUAL; --숫자 123456789 가 문자열 123456789로 변환
+SELECT TO_CHAR(123456789, '999,999,999') FROM DUAL; --숫자 123456789 가 문자열 123456789로 변환하는데 포맷을 정함
+
+DESC EMPLOYEES;
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE) FROM EMPLOYEES;
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'MONTH') FROM EMPLOYEES; --월
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'DAY') FROM EMPLOYEES; --요일
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'YYYY') FROM EMPLOYEES; --년도 4자리
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'YY') FROM EMPLOYEES; --년도 2자리
+
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'D') FROM EMPLOYEES; --요일을 숫자로
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'DD') FROM EMPLOYEES; --일
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'DDD') FROM EMPLOYEES; --1월 1일부터 며칠째
+
+SELECT HIRE_DATE, TO_CHAR(HIRE_DATE, 'YYYY-MM-DD') FROM EMPLOYEES;
+
+--날짜 조건 검색
+--1)
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE > '2007-06-01'
+ORDER BY HIRE_DATE ASC;
+
+--2) 1번은 TO_DATE 과정이 생략됨
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE > TO_DATE('2007-06-01')
+ORDER BY HIRE_DATE ASC;
+
+--3) 1), 2)에 비해 성능이 저하됨
+--HIRE_DATE의 데이터 수만큼 TO_CHAR() 동작
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE TO_CHAR(HIRE_DATE, 'YYYY-MM-DD') > '2007-06-01'
+ORDER BY HIRE_DATE ASC;
+--결과는 1), 2), 3) 모두 동일
+--1), 2) 형변환으로 TO_DATE()로동일한 동작 -> '2007-06-01'만 형변환 함
+--3) TO_CHAR()로 동작
+
+--기간별 날짜검색
+--'2005-12-24' -> 2005-12-24 00:00:00, '2007-06-21' -> 2007-06-21 00:00:00
+--2005-12-24 00:00:00 ~ 2007-06-21 00:00:00 까지여서 2005년 12월 24일 3시 이런거 포함되고 2007년 6월 21일 00시 00분 01초부턴 포함 X
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE >= '2005-12-24' AND HIRE_DATE <= '2007-06-21';
+--성능 무시 결과 위주로 뽑겠다
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE TO_CHAR(HIRE_DATE, 'YYYY-MM-DD') >= '2005-12-24' AND TO_CHAR(HIRE_DATE, 'YYYY-MM-DD') <= '2007-06-21';
+--아니면 그냥 +1일 한 값을 넣어 등호를 빼면 됨
+--1)
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE >= '2005-12-24' AND HIRE_DATE < '2007-06-22';
+--2)
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE >= '2005-12-24' AND HIRE_DATE < (TO_DATE('2007-06-21') + 1);
+
+--날짜 데이터를 비교 시 시, 분, 초 저장된 것을 확인하여 비교분석
+SELECT HIRE_DATE FROM EMPLOYEES
+WHERE HIRE_DATE = '2007-06-21' 
+--TO_DATE('2007-06-01') -> 2007-06-21 00:00:00
+--기본값을 SYSDATE로 하면 00:00:00이 아니라 그당시의 시분초가 저장되어 동일한 데이터 존재 x로 나옴
+ORDER BY HIRE_DATE ASC;
+
+--등록날짜로 검색(시분초가 있음)
+SELECT CREATE_DATE FROM EMPLOYEES
+WHERE CREATE_DATE = '2014-01-08'
+ORDER BY CREATE_DATE ASC; --값 없다고 나옴
+--포맷 맞추기
+SELECT CREATE_DATE FROM EMPLOYEES
+WHERE TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') = '2014-01-08'
+ORDER BY CREATE_DATE ASC;
+
+--시분초가 필요없는 날짜 데이터
+CREATE TABLE DATE_01 (
+    COL1    DATE
+);
+
+INSERT INTO DATE_01 VALUES(SYSDATE);
+INSERT INTO DATE_01 VALUES(TO_CHAR(SYSDATE, 'YYYY-MM-DD'));
+
+SELECT * FROM DATE_01;
+
+
+/*
+② TO_NUMBER(expr, format)
+문자나 다른 유형의 숫자를 NUMBER 형으로 변환하는 함수
+*/
+SELECT TO_NUMBER('123456') FROM DUAL;
+SELECT TO_NUMBER('123,456', '999,999') FROM DUAL; --123456 출력
+SELECT TO_NUMBER('80,000', '999,999') FROM DUAL;
+SELECT TO_NUMBER('100,000', '999,999') - TO_NUMBER('80,000', '999,999') FROM DUAL; --20000 출력
