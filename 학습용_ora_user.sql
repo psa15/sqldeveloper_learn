@@ -1479,3 +1479,419 @@ SELECT TO_NUMBER('123456') FROM DUAL;
 SELECT TO_NUMBER('123,456', '999,999') FROM DUAL; --123456 출력
 SELECT TO_NUMBER('80,000', '999,999') FROM DUAL;
 SELECT TO_NUMBER('100,000', '999,999') - TO_NUMBER('80,000', '999,999') FROM DUAL; --20000 출력
+
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--20220523
+
+/*
+NULL 관련 함수
+    WHERE절
+        IS NULL
+        IS NOT NULLL
+*/
+
+/*
+① NVL(expr1, expr2)
+NVL 함수는 expr1이 NULL일 때 expr2를 반환한다.(파라미터 2개만 사용)
+*/
+--여러개의 파라미터 중 NULL이 아닌 그 다음의 파라미터값을 반환한다.
+SELECT NVL(NULL,0) FROM DUAL; --첫번째 값이 NULL이면 0을 출력하겠다
+SELECT NVL('김지원', 0) FROM DUAL; --'김지원'이라는 값이 없기 때문에 '김지원'이 출력
+SELECT NVL(NULL, NULL) FROM DUAL;
+SELECT NVL(NULL, NULL, 0) FROM DUAL; --파라미터 2개만 가능해서 에러
+
+--EMPLOYEE_ID : NOT NULL 설정
+--manager_id : NULL 설정
+SELECT manager_id, EMPLOYEE_ID, NVL(manager_id, EMPLOYEE_ID) 
+FROM EMPLOYEES
+WHERE manager_id IS NULL; --Steven King 만 해당되게
+
+/*
+①-2) NVL2((expr1, expr2, expr3)
+ expr1이 NULL이 아니면 expr2를, 
+ NULL이면 expr3를 반환
+*/
+SELECT NVL2(NULL, 0, 1) FROM DUAL; --첫번째 파라미터가 NULL이면 1이 반환값이 된다.
+SELECT NVL2('김지원', 0, 1) FROM DUAL;
+
+--NULL연산 주의사항
+-- 널 컬럼과 연산 시 결과값은 NULL이 된다.
+SELECT NULL + '김지원' FROM DUAL; --NULL출력
+SELECT NULL + 10 FROM DUAL;
+--2개의 컬럼 중 하나라도 널이면 결과값은 널이 된다.
+SELECT SALARY * COMMISSION_PCT FROM EMPLOYEES; --SALARY와 COMMISSION_PCT 중 하나만 NULL이어도 NULL 출력
+
+/*급여정산
+앞의 쿼리는 커미션(COMMISSION_PCT)이 
+NULL인 사원은 그냥 급여를,
+NULL이 아니면 '급여 + (급여 * 커미션)'
+을 조회
+*/
+--급여정산 쿼리1)
+SELECT EMPLOYEE_ID, SALARY,
+    NVL2(COMMISSION_PCT, SALARY + (SALARY * COMMISSION_PCT), SALARY)AS SALARY2 
+FROM EMPLOYEES;
+
+/*
+② COALESCE (expr1, expr2, …)
+COALESCE 함수는 매개변수로 들어오는 표현식에서 NULL이 아닌 첫 번째 표현식을 반환하는 함수
+*/
+SELECT COALESCE(NULL, 1, 2) FROM DUAL; --1
+SELECT COALESCE(NULL, NULL, 2) FROM DUAL; --2
+SELECT COALESCE(NULL, NULL, NULL) FROM DUAL; -- NULL
+--급여정산 쿼리2
+SELECT EMPLOYEE_ID, SALARY, COMMISSION_PCT,
+    COALESCE(SALARY + (SALARY * COMMISSION_PCT), SALARY) AS SALARY2 
+FROM EMPLOYEES;
+
+--조건식에서 NULL이 누락되는 사항을 꼭 확인
+--커미션이 0.2보다 작은 데이터를 조회하라
+SELECT EMPLOYEE_ID, COMMISSION_PCT
+FROM EMPLOYEES
+WHERE COMMISSION_PCT < 0.2; --출력결과에 커미션이 NULL(72건) 데이터가 포함 X
+
+SELECT EMPLOYEE_ID, COMMISSION_PCT
+FROM EMPLOYEES
+WHERE COMMISSION_PCT IS NULL;
+
+--11건 + NULL을 0으로 변환하여 조건식에 적용 (72건) = 합이 83건
+SELECT EMPLOYEE_ID, COMMISSION_PCT
+FROM EMPLOYEES
+WHERE NVL(COMMISSION_PCT, 0) < 0.2; --NULL(72건)을 0으로 변환하고 < 0.2 조건식 비교가 처리 -> NULL 데이터 포함
+
+--COUNT(*) : 데이터 개수를 확인하는 함수
+--1번과 2번이 같은 결과 출력
+--1번
+SELECT COUNT(*)
+FROM EMPLOYEES
+WHERE NVL(COMMISSION_PCT, 0) < 0.2;
+
+/*
+LNNVL(조건식)
+매개변수로 들어오는 조건식의 결과가 FALSE나 UNKNOWN이면 TRUE를, TRUE이면 FALSE를 반환
+*/
+--2번
+SELECT COUNT(*)
+FROM EMPLOYEES
+WHERE LNNVL(COMMISSION_PCT >= 0.2);
+
+/*
+3)NULLIF (expr1, expr2)
+NULLIF 함수는 expr1과 expr2을 비교해 같으면 NULL을, 같지 않으면 expr1을 반환
+*/
+--같은 값
+SELECT NULLIF(1, 1) FROM DUAL; --NULL
+SELECT NULLIF('김지원', '김지원') FROM DUAL; --NULL
+--다른 값
+SELECT NULLIF(1, 2) FROM DUAL; --1
+
+/*
+JOB_HISTORY 테이블에서 
+START_DATE와 END_DATE의 연도만 추출해 두 년도가 같으면 NULL을,
+같지 않으면 종료년도를 출력
+*/
+--년도만 필요하기 때문에 앞의 4자리만 가져오기
+SELECT TO_CHAR(START_DATE, 'YYYY'), TO_CHAR(END_DATE, 'YYYY') FROM JOB_HISTORY;
+SELECT TO_CHAR(START_DATE, 'YYYY') AS START_YESR,
+       TO_CHAR(END_DATE, 'YYYY') AS END_YEAR,
+       NULLIF(TO_CHAR(END_DATE, 'YYYY'), TO_CHAR(START_DATE, 'YYYY')) AS NULLIF_YEAR
+FROM JOB_HISTORY;
+
+/*
+GREATEST(expr1, expr2, …), LEAST(expr1, expr2, …)
+GREATEST는 매개변수로 들어오는 표현식에서 가장 큰 값을, LEAST는 가장 작은 값을 반환
+*/
+    SELECT GREATEST(1, 2, 3, 2),
+           LEAST(1, 2, 3, 2)
+      FROM DUAL;
+      
+    SELECT GREATEST('이순신', '강감찬', '세종대왕'),
+           LEAST('이순신', '강감찬', '세종대왕')
+      FROM DUAL;
+      
+/*
+DECODE (expr, search1, result1, search2, result2, …, default)
+DECODE는 expr과 search1을 비교해 두 값이 같으면 result1을, 
+같지 않으면 다시 search2와 비교해 값이 같으면 result2를 반환하고, 
+이런 식으로 계속 비교한 뒤 최종적으로 같은 값이 없으면 default 값을 반환
+*/
+--쿼리
+/*
+CHANNEL_ID 컬럼의 값이 3이면 'Direct' 출력
+                     9이면, 'Direct' 
+                     5이면 'Indirect'
+                     4이면 'Indirect'
+                     나머지는 'Others'
+다음과 같이 출력하자
+*/
+--가독성 있는 코딩
+SELECT CHANNEL_ID, DECODE(CHANNEL_ID, 3, 'Direct',
+                                      9, 'Direct',
+                                      5, 'Indirect',
+                                      4, 'Indirect',
+                                     'Others') AS DECODES
+
+FROM CHANNELS;
+
+--가독성 없는 코딩
+SELECT CHANNEL_ID, DECODE(CHANNEL_ID, 3, 'Direct', 9, 'Direct', 5, 'Indirect', 4, 'Indirect', 'Others') AS DECODES
+FROM CHANNELS;
+
+/*
+기본 집계함수
+집계함수란 대상 데이터를 특정 그룹으로 묶은 다음 이 그룹에 대해 총합(SUM), 평균(AVG), 최댓값(MAX), 최솟값(MIN), 개수(COUNT) 등을 구하는 함수
+NULL 데이터를 제외하고 기능이 적용
+단일값을 반환
+*/
+SELECT * FROM EMPLOYEES;
+/*
+① COUNT (expr)
+쿼리 결과 건수, 즉 전체 로우 수를 반환하는 집계 함수
+테이블 전체 로우는 물론 WHERE 조건으로 걸러진 로우 수를 반환
+특정 컬럼명의 건수를 조회할 때 NULL은 제외된다
+*/
+
+SELECT COUNT(*) FROM EMPLOYEES;
+
+/*
+잘못된 사용 (구조적으로 같이 사용할 수가 없도록 되어 있다.
+COUNT(*) : 107 만 출력
+EMPLOYEE_ID : 107건의 데이터행 출력
+*/
+SELECT COUNT(*), EMPLOYEE_ID, EMP_NAME FROM EMPLOYEES;
+
+DESC EMPLOYEES; --테이블의 NULL 여부를 확인
+SELECT COUNT(EMPLOYEE_ID) FROM EMPLOYEES; --EMPLOYEE_ID컬럼은 PRIMARY KEY 설정되어 있으므로 NOT NULL이기 때문에 107 출력
+
+--NULL데이터는 제외
+SELECT COUNT(DEPARTMENT_ID) FROM EMPLOYEES; --DEPARTMENT_ID 컬럼은 NULL이고 NULL이 데이터에 포함되어 있으면 제외되고 출력
+--NULL인 데이터 확인
+SELECT * FROM EMPLOYEES WHERE DEPARTMENT_ID IS NULL;
+
+/*
+DISTINCT : 중복된 데이터 행을 1개가 참조하고  나머지는 제외하는 기능
+*/
+--사원테이블을 참조하여 부서가 몇개인지 알고 싶다
+SELECT COUNT(DISTINCT DEPARTMENT_ID) FROM EMPLOYEES;
+--어떤 부서가 있는지 확인(중복 제거)
+SELECT DISTINCT DEPARTMENT_ID FROM EMPLOYEES;
+--정렬시 컬럼명 대신 숫자 사용 가능
+SELECT DISTINCT DEPARTMENT_ID FROM EMPLOYEES
+ORDER BY 1;
+-- 여러개의 컬럼 중 동시에 만족하는 데이터를 1개만 참조하고 나머지는 제외
+SELECT DISTINCT EMPLOYEE_ID, DEPARTMENT_ID FROM EMPLOYEES;
+
+/*
+② SUM(expr)
+SUM은 expr의 전체 합계를 반환하는 함수로 매개변수 expr에는 숫자형만 
+*/
+--사원 테이블에서 급여가 숫자형이므로 전 사원의 급여 총액을 구해 보자.
+SELECT SUM(SALARY) FROM EMPLOYEES; --집계함수는 컬럼의 널 데이터를 제외하고 함수가 사용
+--현재 NULL값 있는지 조회하여 확인
+SELECT SALARY FROM EMPLOYEES WHERE SALARY IS NULL;
+
+--평균 : AVG 함수 사용
+SELECT AVG(SALARY) FROM EMPLOYEES;
+--소수 둘째자리까지만 출력
+SELECT ROUND(AVG(SALARY), 2) FROM EMPLOYEES;
+
+--가장 높은 연봉?
+SELECT MAX(SALARY) FROM EMPLOYEES;
+--가장 낮은 연봉
+SELECT MIN(SALARY) FROM EMPLOYEES;
+
+--합쳐서
+SELECT COUNT(*), SUM(SALARY), AVG(SALARY), MAX(SALARY), MIN(SALARY) FROM EMPLOYEES;
+
+/*
+자격증 접수 : 30명
+응시 이누언수 : 25명
+미응시 인원수 : 5명
+
+전체 30명의 평균을 구해야 함
+*/
+SELECT AVG(점수) FROM 자격증 접수;
+
+--점수 컬럼에 NULL인 데이터를 0으로 변경하여 처리
+SELECT AVG(NVL(점수,0)) FROM 자격증 접수;
+
+
+/*
+GROUP BY절
+- 특정 그룹으로 묶어 데이터를 집계
+- 그룹으로 묶을 컬럼명이나 표현식을 GROUP BY 절에 명시해서 사용
+- WHERE와 ORDER BY절 사이에 위치
+
+그룹화
+- 컬럼의 동일한 데이터를 대상으로 하여 묶는 의미
+
+GROUP BY 문법을 사용시에는 SELECT절에 사용하는 컬럼은 제한이 되어 있다.
+- GROUP BY에 언급한 컬럼명과 집계함수만 SELECT절에 사용 가능
+*/
+
+/*
+질문시, 그룹화 대상의 컬럼이 무엇인지 판단!!
+사원 테이블에서 각 부서별 급여의 총액
+*/
+--부서 ID를 오름차순으로 정렬
+SELECT DEPARTMENT_ID, SALARY
+FROM EMPLOYEES
+ORDER BY DEPARTMENT_ID; 
+ --DEPARTMENT_ID의 동일한 데이터들을 묶어(그룹화) 부서별 합계를 구한다.
+SELECT SUM(SALARY)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID;
+
+--두 개 합침
+SELECT DEPARTMENT_ID, SUM(SALARY)
+FROM EMPLOYEES --전체 데이터 대상 작업
+GROUP BY DEPARTMENT_ID --DEPARTMENT_ID의 동일한 데이터들을 묶는다
+ORDER BY DEPARTMENT_ID; --오름차순 정렬
+
+--GROUP BY 문법을 사용시에는 SELECT절에 사용하는 컬럼은 제한
+SELECT EMPLOYEE_ID /* 107건 데이터 출력 */, DEPARTMENT_ID /*그룹화된 데이터만 출력 */, SUM(SALARY)
+FROM EMPLOYEES 
+GROUP BY DEPARTMENT_ID 
+ORDER BY DEPARTMENT_ID;
+--00979. 00000 -  "not a GROUP BY expression"
+--EMPLOYEE_ID 컬럼 사용 X
+
+/*
+사원 테이블에서 각 부서별 인원수
+*/
+SELECT DEPARTMENT_ID, COUNT(EMPLOYEE_ID)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID
+ORDER BY DEPARTMENT_ID;
+
+/*
+사원 테이블에서 각 부서별 평균 연봉을 구하라
+*/
+SELECT DEPARTMENT_ID, ROUND(AVG(SALARY), 2)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID
+ORDER BY DEPARTMENT_ID;
+
+--종합으로 집계함수를 모두 사용
+--각 부서별 -> 급여합계 급여 평균, 사원 수, 부서별 가장 높은 금액, 부서별 가장 낮은 금액
+SELECT DEPARTMENT_ID, COUNT(EMPLOYEE_ID), SUM(SALARY), ROUND(AVG(SALARY), 2), MAX(SALARY), MIN(SALARY)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID
+ORDER BY DEPARTMENT_ID;
+
+/*
+HAVING 절 : GROUP BY 문법과 함께 사용하며, 발생된 데이터에 대하여 조건식을 사용
+GROUP BY절 다음에 위치해 GROUP BY한 결과를 대상으로 다시 필터를 거는 역할을 수행
+HAVING 필터 조건 형태로 사용
+*/
+--사원 테이블에서 각 부서별 평균 연봉이 3000보다 큰 데이터를 출력하라
+SELECT DEPARTMENT_ID, ROUND(AVG(SALARY), 2)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID
+HAVING AVG(SALARY) > 3000
+ORDER BY DEPARTMENT_ID;
+
+--대출관련 테이블 : KOR_LOAN_STATUS
+SELECT * FROM KOR_LOAN_STATUS;
+DESC KOR_LOAN_STATUS; --데이터타입과 널 유무 확인
+
+--2013년 지역별 가계대출 총 잔액
+SELECT REGION, SUM(LOAN_JAN_AMT) TOT_LOAN
+FROM KOR_LOAN_STATUS
+WHERE PERIOD LIKE '2013%'
+GROUP BY REGION
+ORDER BY REGION;
+
+--2013년 지역별 가계대출별 총 잔액
+SELECT REGION, GUBUN, SUM(LOAN_JAN_AMT) TOT_LOAN
+FROM KOR_LOAN_STATUS
+WHERE PERIOD LIKE '2013%'
+GROUP BY REGION, GUBUN
+ORDER BY REGION;
+
+--2013년 11월 데이터 한정 지역별 가계대출 총 잔액
+SELECT REGION, SUM(LOAN_JAN_AMT) TOT_LOAN
+FROM KOR_LOAN_STATUS
+WHERE PERIOD LIKE '201311'
+GROUP BY REGION
+ORDER BY REGION;
+
+--사원테이블의 부서ID와 JOBID별 평균 급여가 3000보다 큰 데이터를 조회하라
+SELECT department_id, JOB_ID, COUNT(*), ROUND(AVG(SALARY),2) AVGSALARY
+FROM EMPLOYEES --1)
+GROUP BY department_id, JOB_ID --2)
+HAVING AVG(SALARY) > 3000 --3)
+ORDER BY department_id, JOB_ID; --4)
+
+/*
+ROLLUP 절과 CUBE 절
+GROUP BY절에서 사용되어 그룹별 소계를 추가로 보여 주는 역할
+*/
+--ROLLUP을 적용하지 않은 상태
+SELECT period, gubun, SUM(loan_jan_amt) totl_jan
+FROM kor_loan_status
+WHERE period LIKE '2013%'
+GROUP BY period, gubun --2개 컬럼을 동시에 만족하는 데이터
+ORDER BY period;
+/*
+PERIOD GUBUN                            TOTL_JAN
+------ ------------------------------ ----------
+201310 기타대출                           676078
+201310 주택담보대출                     411415.9
+201311 기타대출                         681121.3
+201311 주택담보대출                     414236.9
+*/
+
+--ROLLUP 적용
+--GROUP BY PERIOD, GUBUN 데이터를 내역으고 하여 중간소계, 최종소계 함께 출력
+SELECT period, gubun, SUM(loan_jan_amt) totl_jan
+FROM kor_loan_status
+WHERE period LIKE '2013%'
+GROUP BY ROLLUP(period, gubun) --컬럼 수 2 + 1 -> 3레벨
+ORDER BY period;
+/*
+PERIOD GUBUN                            TOTL_JAN
+------ ------------------------------ ----------
+201310 기타대출                           676078 --내역 -3레벨
+201310 주택담보대출                     411415.9 --내역 -3레벨
+201310                                 1087493.9 --PERIOD 중간 소계 - 2레벨
+201311 기타대출                         681121.3 --내역 -3레벨
+201311 주택담보대출                     414236.9 --내역 -3레벨
+201311                                 1095358.2 --PERIOD 중간 소계 - 2레벨
+                                       2182852.1 --전체 집계 - 1레벨
+*/
+--PERIOD와 GUBUN 의 ROLLUP 순서를 바꾸면?
+SELECT period, gubun, SUM(loan_jan_amt) totl_jan
+FROM kor_loan_status
+WHERE period LIKE '2013%'
+GROUP BY ROLLUP(gubun, period) --컬럼 수 2 + 1 -> 3레벨, 전체집계, GUBUN중간 소계, 내역
+ORDER BY period;
+/*
+PERIOD GUBUN                            TOTL_JAN
+------ ------------------------------ ----------
+201310 기타대출                           676078
+201310 주택담보대출                     411415.9
+201311 주택담보대출                     414236.9
+201311 기타대출                         681121.3
+       기타대출                        1357199.3 --GUBUN 집계
+                                      2182852.1 --전체 집계
+       주택담보대출                      825652.8 --GUBUN 집계
+*/
+
+SELECT period, gubun, SUM(loan_jan_amt) totl_jan
+FROM kor_loan_status
+WHERE period LIKE '2013%'
+GROUP BY period, ROLLUP(gubun); --전체 집계 제외한 출력모습, ROLLUP의 컬럼 1개 + 1 -> 2레벨
+/*
+PERIOD GUBUN                            TOTL_JAN
+------ ------------------------------ ----------
+201310 기타대출                           676078 --내역 - 2레벨
+201310 주택담보대출                     411415.9 --내역 -2레벨
+201310                                 1087493.9 --1레벨
+201311 기타대출                         681121.3 --내역 -2레벨
+201311 주택담보대출                     414236.9 --내역 -2레벨
+201311                                 1095358.2--1레벨
+*/
+
+/*ROLLUP 실습 예제 - HR계정 */
