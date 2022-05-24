@@ -35,7 +35,7 @@ SELECT job
  GROUP BY job, ROLLUP(DEPTCD) --JOB DEPTCD별 그룹화 데이터 내역(2), JOB별(소계) (1)
  ;
 
---------------------------------------ROLLUP 데이터 예제
+--------------------------------------ROLLUP 데이터 예제(20220523)
 
 SELECT job
      , deptno

@@ -1728,6 +1728,11 @@ GROUP BY절
 
 GROUP BY 문법을 사용시에는 SELECT절에 사용하는 컬럼은 제한이 되어 있다.
 - GROUP BY에 언급한 컬럼명과 집계함수만 SELECT절에 사용 가능
+
+**특징
+1) GROUP BY 절: 계층구조의 결과를 포함하지 않는다. (그룹화된 데이터의 내역만 보여줌)
+2) GROUP BY ROLLUP 절 : 그룹화된 데이터의 내역, 내역을 대상으로 한 소계, 전체 합계(계층구조가 포함)
+3) GROUP BY CUBE 절 : 그룹화된 데이터의 내역, 내역을 대상으로 한 소계, + 모든 조합수의 소계, 전체 합계(계층구조가 포함)
 */
 
 /*
@@ -1760,7 +1765,7 @@ ORDER BY DEPARTMENT_ID;
 /*
 사원 테이블에서 각 부서별 인원수
 */
-SELECT DEPARTMENT_ID, COUNT(EMPLOYEE_ID)
+SELECT DEPARTMENT_ID, COUNT(EMPLOYEE_ID)NUMBER_OF_EMPLOYEES
 FROM EMPLOYEES
 GROUP BY DEPARTMENT_ID
 ORDER BY DEPARTMENT_ID;
@@ -1781,15 +1786,18 @@ GROUP BY DEPARTMENT_ID
 ORDER BY DEPARTMENT_ID;
 
 /*
-HAVING 절 : GROUP BY 문법과 함께 사용하며, 발생된 데이터에 대하여 조건식을 사용
-GROUP BY절 다음에 위치해 GROUP BY한 결과를 대상으로 다시 필터를 거는 역할을 수행
-HAVING 필터 조건 형태로 사용
+HAVING 절 : GROUP BY 문법과 함께 사용하며(단독 X), 발생된 데이터에 대하여 조건식을 사용
+- GROUP BY절 다음에 위치해 GROUP BY한 결과를 대상으로 다시 필터를 거는 역할을 수행
+- HAVING 필터 조건 형태로 사용
+- 반드시 집계함수 형태로 사용
+
+WHERE절은 FROM 뒤에 오며 전체 데이터를 대상으로 필터
 */
 --사원 테이블에서 각 부서별 평균 연봉이 3000보다 큰 데이터를 출력하라
 SELECT DEPARTMENT_ID, ROUND(AVG(SALARY), 2)
 FROM EMPLOYEES
 GROUP BY DEPARTMENT_ID
-HAVING AVG(SALARY) > 3000
+HAVING AVG(SALARY) > 5000
 ORDER BY DEPARTMENT_ID;
 
 --대출관련 테이블 : KOR_LOAN_STATUS
@@ -1803,12 +1811,32 @@ WHERE PERIOD LIKE '2013%'
 GROUP BY REGION
 ORDER BY REGION;
 
---2013년 지역별 가계대출별 총 잔액
+/*
+**특징
+1) GROUP BY 절: 계층구조의 결과를 포함하지 않는다. (그룹화된 데이터의 내역만 보여줌)
+2) GROUP BY ROLLUP 절 : 그룹화된 데이터의 내역, 내역을 대상으로 한 소계, 전체 합계(계층구조가 포함)
+3) GROUP BY CUBE 절 : 그룹화된 데이터의 내역, 내역을 대상으로 한 소계, + 모든 조합수의 소계, 전체 합계(계층구조가 포함)
+*/
+--1) 2013년 지역별 가계대출별 총 잔액
+--1레벨 데이터만 출력(ROLLUP 레벨 관점)
 SELECT REGION, GUBUN, SUM(LOAN_JAN_AMT) TOT_LOAN
 FROM KOR_LOAN_STATUS
 WHERE PERIOD LIKE '2013%'
 GROUP BY REGION, GUBUN
 ORDER BY REGION;
+--2) 2013년 지역별 합계도 보고 싶다면? ROLUP - 2레벨, 3레벨 추가
+SELECT REGION, GUBUN, SUM(LOAN_JAN_AMT) TOT_LOAN
+FROM KOR_LOAN_STATUS
+WHERE PERIOD LIKE '2013%'
+GROUP BY ROLLUP( REGION, GUBUN)
+ORDER BY REGION;
+--3) 2013년 지역별 합계 + 구분별 합계 보고싶다면? CUBE - 2의 컬럼갯수2승 = 4개유형
+SELECT REGION, GUBUN, SUM(LOAN_JAN_AMT) TOT_LOAN
+FROM KOR_LOAN_STATUS
+WHERE PERIOD LIKE '2013%'
+GROUP BY CUBE( REGION, GUBUN)
+ORDER BY REGION;
+
 
 --2013년 11월 데이터 한정 지역별 가계대출 총 잔액
 SELECT REGION, SUM(LOAN_JAN_AMT) TOT_LOAN
@@ -1895,3 +1923,640 @@ PERIOD GUBUN                            TOTL_JAN
 */
 
 /*ROLLUP 실습 예제 - HR계정 */
+
+
+--++++++++++++++++++++++++++++++++++++20220524+++++++++++++++++++++++++++++++++++++++++++++++
+--=======집합 연산자==============
+/*
+BLOB, CLOB, BFILE 타입의 컬럼에 대해서는 집합 연산자를 사용할 수 없다
+UNION, INTERSECT, MINUS 연산자는 LONG형 컬럼에는 사용할 수 없다
+*/
+------UNON은 합집합을 의미한다-----
+--컬럼의 개수와 타입이 동일 혹은 호환이 가능해야 한다.
+
+--한국, 일본의 주요 10대 수출품
+CREATE TABLE exp_goods_asia (
+       country VARCHAR2(10),
+       seq     NUMBER,
+       goods   VARCHAR2(80)
+);
+
+INSERT INTO exp_goods_asia VALUES ('한국', 1, '원유제외 석유류');
+INSERT INTO exp_goods_asia VALUES ('한국', 2, '자동차');
+INSERT INTO exp_goods_asia VALUES ('한국', 3, '전자집적회로');
+INSERT INTO exp_goods_asia VALUES ('한국', 4, '선박');
+INSERT INTO exp_goods_asia VALUES ('한국', 5,  'LCD');
+INSERT INTO exp_goods_asia VALUES ('한국', 6,  '자동차부품');
+INSERT INTO exp_goods_asia VALUES ('한국', 7,  '휴대전화');
+INSERT INTO exp_goods_asia VALUES ('한국', 8,  '환식탄화수소');
+INSERT INTO exp_goods_asia VALUES ('한국', 9,  '무선송신기 디스플레이 부속품');
+INSERT INTO exp_goods_asia VALUES ('한국', 10,  '철 또는 비합금강');
+INSERT INTO exp_goods_asia VALUES ('일본', 1, '자동차');
+INSERT INTO exp_goods_asia VALUES ('일본', 2, '자동차부품');
+INSERT INTO exp_goods_asia VALUES ('일본', 3, '전자집적회로');
+INSERT INTO exp_goods_asia VALUES ('일본', 4, '선박');
+INSERT INTO exp_goods_asia VALUES ('일본', 5, '반도체웨이퍼');
+INSERT INTO exp_goods_asia VALUES ('일본', 6, '화물차');
+INSERT INTO exp_goods_asia VALUES ('일본', 7, '원유제외 석유류');
+INSERT INTO exp_goods_asia VALUES ('일본', 8, '건설기계');
+INSERT INTO exp_goods_asia VALUES ('일본', 9, '다이오드, 트랜지스터');
+INSERT INTO exp_goods_asia VALUES ('일본', 10, '기계류');
+
+COMMIT;
+--데이터 구성 살펴보기
+SELECT * FROM exp_goods_asia;
+
+--한국의 주요 수출품목을 조회하라
+SELECT *
+FROM exp_goods_asia
+WHERE country = '한국'
+ORDER BY SEQ;
+--일본의 주요 수출품목을 조회하라
+SELECT *
+FROM exp_goods_asia
+WHERE country = '일본'
+ORDER BY SEQ;
+
+--국가에 상관없이 모든 수출품목을 조회 (단, 품목은 한 번만 조회)
+--1)두 결과를 합침 - UNION (ORDER BY절 삭제, 두 쿼리 사이에 UNION 삽입)
+SELECT *
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT *
+FROM exp_goods_asia
+WHERE country = '일본';
+--2)품목만 조회
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본'; --전체 20건 중 중복된 데이터는 한 번만 조회하여 15건 출력
+--3)전체 수출품목 조회(품목 중복 O)-> UNION ALL
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION ALL
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+
+--UNION 사용 불가
+--개수가 다름
+--01789. 00000 -  "query block has incorrect number of result columns"
+SELECT SEQ, GOODS
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+--타입이 다름
+--01790. 00000 -  "expression must have same datatype as corresponding expression"
+SELECT SEQ
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+
+--타입은 다르지만 굳이 출력 하겠다면? - 형변환
+SELECT TO_CHAR(SEQ)
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+
+--SELECT문 여러개 사용 가능
+SELECT TO_CHAR(SEQ)AS "번호"
+FROM exp_goods_asia
+WHERE country = '한국'
+UNION
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본'
+UNION
+SELECT TO_CHAR(SEQ)
+FROM exp_goods_asia
+WHERE country = '한국';
+
+/*
+INTERSECT
+INTERSECT는 합집합이 아닌 교집합을 의미한다. 
+즉 데이터 집합에서 공통된 항목만 추출해 낸다.
+*/
+SELECT * FROM exp_goods_asia;
+--일본과 한국의 공통된 품목 출력
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '한국'
+INTERSECT
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+
+/*
+MINUS
+MINUS는 차집합을 의미한다. 
+즉 한 데이터 집합을 기준으로 다른 데이터 집합과 공통된 항목을 제외한 결과만 추출해 낸다.
+*/
+--한국입장에서 바라볼 때, 일본과 겹치지 않는 품목 조회
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '한국'
+MINUS
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본';
+--일본입장에서 바라볼 때, 한국과 겹치지 않는 품목 조회
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '일본'
+MINUS
+SELECT GOODS
+FROM exp_goods_asia
+WHERE country = '한국';
+
+/*
+집합 연산자로 SELECT 문을 연결할 때 ORDER BY절은 맨 마지막 SELECT 문장에서만 사용
+*/
+--1) 에러 발생
+    SELECT goods
+      FROM exp_goods_asia
+     WHERE country = '한국'
+     ORDER BY goods
+     UNION
+    SELECT goods
+      FROM exp_goods_asia
+     WHERE country = '일본';
+--2)성공
+    SELECT goods
+      FROM exp_goods_asia
+     WHERE country = '한국'
+     UNION
+    SELECT goods
+      FROM exp_goods_asia
+     WHERE country = '일본'
+      ORDER BY goods; --앞 SELECT문의 결과를 전체적인 관점에서 정렬하는 의미로 사용
+      
+/*
+GROUPING SETS
+- ROLLUP이나 CUBE처럼 GROUP BY 절에 명시해서 그룹 쿼리에 사용되는 절
+*/
+
+SELECT period, gubun, SUM(loan_jan_amt) totl_jan
+ FROM kor_loan_status
+WHERE period LIKE '2013%'
+GROUP BY GROUPING SETS(period, gubun);
+/*
+아래 결과와 같은 의미
+ SELECT period, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+ GROUP BY PERIOD
+ UNION ALL
+ SELECT gubun, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+ GROUP BY gubun;
+ */
+ 
+SELECT period, gubun, region, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+   AND region IN ('서울', '경기')
+ GROUP BY GROUPING SETS(period, (gubun, region));
+
+/*
+아래 결과와 같은 결과
+ SELECT period, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+    AND region IN ('서울', '경기')
+ GROUP BY PERIOD
+ UNION ALL
+ SELECT gubun, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+    AND region IN ('서울', '경기')
+ GROUP BY gubun,region;
+ */
+  SELECT period, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+    AND region IN ('서울', '경기')
+ GROUP BY PERIOD
+ UNION ALL
+ SELECT gubun, SUM(loan_jan_amt) totl_jan
+  FROM kor_loan_status
+ WHERE period LIKE '2013%' 
+    AND region IN ('서울', '경기')
+ GROUP BY gubun,region;
+ 
+ /*
+ 조인
+ --테이블 2개에 존재하는 각 컬럼의 데이터를 비교하여 일치되는 데이터를 수평적 결합을 하는 형태
+ */
+ -- 사원테이블의 모든 데이터를 출력하는데 사원번호, 사원이름, 부서 ID대신 부서이름을 출력
+ --1)
+SELECT employee_id, EMP_NAME, DEPARTMENT_ID 
+FROM EMPLOYEES
+WHERE ROWNUM <= 10;
+--2)
+SELECT DEPARTMENT_ID, DEPARTMENT_NAME
+FROM DEPARTMENTS;
+--3) 결과
+SELECT employee_id, EMP_NAME, departments.department_name 
+FROM EMPLOYEES 
+INNER JOIN DEPARTMENTS
+ON EMPLOYEES.DEPARTMENT_ID = departments.department_id
+WHERE ROWNUM <= 10;
+
+--만약? 사원테이블의 모든 데이터를 출력하는데 사원번호, 사원이름, 부서 ID
+SELECT employee_id, EMP_NAME, DEPARTMENT_ID FROM EMPLOYEES;
+
+--모든 사원정보 데이터를 출력 (사원번호, 사원이름, 부서이름)
+--사원번호, 사원이름 : EMPLOYEES
+--부서이름 : DEPARTMNETS
+--컬럼순서는 사원번호, 이름, 부서이름
+--조인 한다 == 비교한다
+--ON == WHERE
+--INNER JOIN : 일치되는 데이터를 수평적 결합
+--ANSI조인 (표준)
+SELECT employee_id, EMP_NAME, departments.department_name
+FROM EMPLOYEES INNER JOIN DEPARTMENTS --EMPLOYEES 테이블과 DEPARTMENTS테이블을 비교한다
+ON employees.department_id = departments.department_id; 
+--EMPLOYEES 테이블의 department_id와 DEPARTMENTS테이블의 department_id를 비교한다
+
+--ORACLE 조인
+--INNER JOIN 대신 콤마
+--ON 대신 WHERE
+SELECT *
+FROM EMPLOYEES, DEPARTMENTS
+WHERE employees.department_id = departments.department_id; 
+
+--부서가 담당했던 JOB_ID 출력
+-- 컬럼은 department_id, DEPARTMENT_NAME, JOB_ID
+--주체는 부서
+--JOB_HISTORY에 department_id와 JOB_ID 존재 -> 둘 다 FK로 존재 가능
+--JOB_HISTORY에 있는 부서만 조회됨
+--ANSI JOIN
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS INNER JOIN JOB_HISTORY
+ON departments.department_id = job_history.department_id;
+--ORACLE
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS, JOB_HISTORY
+WHERE departments.department_id = job_history.department_id;
+
+--JOB_HISTORY에 없어도 모든 부서도 출력하고 싶다면?
+--부서 테이블 중 JOB_HISTORY 테이블에 데이터가 존재하지 않는 부서 포함 출력
+--> OUTER JOIN
+/* OUTER JOIN: 일치 하는 데이터(INNER JOIN) + 일치 되지 않는 데이터도 출력
+--LEFT OUTER JOIN, RIGHT OUTER JOIN, FULL OUTER JOIN
+*/
+--1) LEFT OUTER JOIN
+--LEFT : 일치되지 않는 데이터로 좌측 테이블을 가리킴
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS LEFT OUTER JOIN JOB_HISTORY
+ON departments.department_id = job_history.department_id;
+--2) RIGHT
+--RIGHT : 일치되지 않는 데이터로 우측 테이블을 가리킴
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM job_history RIGHT OUTER JOIN DEPARTMENTS
+ON departments.department_id = job_history.department_id;
+--3) OUTER JOIN을 썼지만 INNER JOIN과 같은 결과가 나옴 어쩌다보니!
+--JOB_HISTORY에 일치하지 않는 데이터는 없어서( 다 일치함)
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM job_history LEFT OUTER JOIN DEPARTMENTS
+ON departments.department_id = job_history.department_id;
+
+--ORACLE LEFT OUTER JOIN (+) : 조인 조건에서 데이터가 없는 테이블의 컬럼에 사용
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS, job_history
+WHERE departments.department_id = job_history.department_id(+);
+
+--ORACLE RIGHT OUTER JOIN (+)
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM job_history,DEPARTMENTS
+WHERE departments.department_id = job_history.department_id(+);
+/*
+LEFT OUTER JOIN에서 조건이 추가될 경우 (+)도 추가
+*/
+--1) 잘못된 경우
+    select a.employee_id, a.emp_name, b.job_id, b.department_id
+      from employees a,
+           job_history b
+     where a.employee_id  = b.employee_id(+)
+       and a.department_id = b.department_id;
+--2) 올바른 경우
+    select a.employee_id, a.emp_name, b.job_id, b.department_id
+      from employees a,
+           job_history b
+     where a.employee_id  = b.employee_id(+)
+       and a.department_id = b.department_id(+);
+
+--ANSI: FULL OUTER JOIN (LEFT OUTER JOIN + RIGHT OUTER JOIN)
+--JOB_HISTORY테이블의 부서코드 컬럼의 데이터가 DEPARTMENTS테이블에 부분집합.
+--즉, 종속적인 관계로 인하여 1번과 2번은 결과가 동일
+--1)
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS FULL OUTER JOIN JOB_HISTORY --JOB_HISTORY에 일치하지 않는 데이터 X
+ON departments.department_id = job_history.department_id;
+--2) 1과 같은 결과
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM DEPARTMENTS LEFT OUTER JOIN JOB_HISTORY
+ON departments.department_id = job_history.department_id;
+
+--ORACLE FULL OUTER JOIN은 지원 X
+--조인 조건 하나에 (+) 2개를 좌, 우측에 사용하는 문법 X
+SELECT DEPARTMENTS.department_id, DEPARTMENT_NAME, JOB_ID
+FROM job_history,DEPARTMENTS
+WHERE departments.department_id(+) = job_history.department_id(+);
+
+/*
+카타시안 조인
+카타시안 조인(CATASIAN PRODUCT)은 WHERE 절에 조인 조건이 없는 조인을 말한다. 
+즉 FROM 절에 테이블을 명시했으나, 두 테이블 간 조인 조건이 없는 조인
+*/
+--107 * 27 데이터행 출력
+SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+FROM employees a,
+     departments b;
+--WHERE절이 없는 형태
+
+SELECT COUNT(*) FROM EMPLOYEES; -- 107건
+SELECT COUNT(*) FROM DEPARTMENTS; --27건
+
+
+--2013년 1월 1일 이후에 입사한 사원번호, 사원명, 부서번호, 부서명을 조회하는 쿼리를 비교해 보자.
+--<ORACLE 문법>
+    SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+      FROM employees a,
+           departments b
+     WHERE a.department_id = b.department_id
+       AND a.hire_date >= TO_DATE('2003-01-01','YYYY-MM-DD');
+       
+--<ANSI 문법>
+    SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+      FROM employees a
+     INNER JOIN departments b
+        ON (a.department_id = b.department_id )
+     WHERE a.hire_date >= TO_DATE('2003-01-01','YYYY-MM-DD');
+
+--ON 대신 USING 사용
+--<잘못된 경우>
+--SELECT문의 b.department_id 에 별칭을 사용해서 에러가 남
+   SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+      FROM employees a
+     INNER JOIN departments b
+     USING (department_id) -- = ON employees.department_id = department.department_name
+     WHERE a.hire_date >= TO_DATE('2003-01-01','YYYY-MM-DD');
+--SQL 오류: ORA-25154: USING 절의 열 부분은 식별자를 가질 수 없음.
+
+--<잘 된 경우>
+ SELECT a.employee_id, a.emp_name, department_id, b.department_name
+      FROM employees a --테이블 별칭 a
+     INNER JOIN departments b --테이블 별칭 b
+     USING (department_id)
+     WHERE a.hire_date >= TO_DATE('2003-01-01','YYYY-MM-DD');
+     
+--ON절 사용시 SELECT절에 조건에 사용하는 중복된 컬럼명은 별칭을 사용
+   SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+      FROM employees a
+     INNER JOIN departments b
+     ON a.department_id = department.department_name;
+
+--테이블 별칭 사용 안한 경우
+   SELECT employees.employee_id, employees.emp_name, departments.department_id, departments.department_name
+      FROM employees
+     INNER JOIN departments
+     ON employees.department_id = department.department_name;
+     
+--<기존 ORACLE 문법>
+SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+FROM employees a,
+    departments b;
+
+--<ANSI 문법>
+SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+FROM employees a
+CROSS JOIN departments b;
+
+/*
+FULL OUTER JOIN 예제
+*/
+CREATE TABLE HONG_A  (EMP_ID INT);
+CREATE TABLE HONG_B  (EMP_ID INT);
+
+INSERT INTO HONG_A VALUES ( 10);
+INSERT INTO HONG_A VALUES ( 20);
+INSERT INTO HONG_A VALUES ( 40);
+INSERT INTO HONG_B VALUES ( 10);
+INSERT INTO HONG_B VALUES ( 20);
+INSERT INTO HONG_B VALUES ( 30);
+
+COMMIT;
+--오라클 FULL OUTER JOIN 지원 X
+
+--ANSI FULL OUTER JOIN
+SELECT a.emp_id, b.emp_id
+FROM hong_a a
+FULL OUTER JOIN hong_b b
+ON ( a.emp_id = b.emp_id);
+
+--출력시 테이블에 데이터가 존재하지 않는 NULL과 조인 시 일치되지 않은 상태에서 결합된 모습의 NULL(OUTER JOIN) 구분
+
+
+/*
+서브 쿼리
+SQL 문장 안에서 보조로 사용되는 또 다른 SELECT문을 의미
+*/
+
+/*
+연관성 없는 서브 쿼리
+메인 쿼리와의 연관성이 없는 서브 쿼리
+메인 테이블과 조인 조건이 걸리지 않는 서브 쿼리
+- 서브쿼리인 SELECT문을 실행됐을 때 결과나오는 쿼리
+*/
+--유형1>
+--전 사원의 평균 급여 이상을 받는 사원 수를 조회
+--1) 전 사원의 평균 급여
+SELECT AVG(SALARY) FROM EMPLOYEES;
+--2) 조건식 : 전 사원의 평균 급여 < 급여 인 인원수
+SELECT count(*) --메인 쿼리
+FROM employees
+WHERE salary >=  (SELECT AVG(SALARY) FROM EMPLOYEES); --서브쿼리()안의 SELECT문
+
+--유형2>
+--부서 테이블에서 parent_id가 NULL인 부서번호를 가진 사원의 총 건수를 반환
+--1) 부서 테이블에서 PARENT_ID가 NULL인 부서번호
+SELECT department_id
+FROM departments
+WHERE parent_id IS NULL;
+--2) 조건식 : 부서 테이블에서 PARENT_ID가 NULL인 부서번호
+--IN 사용 시, 서브쿼리의 결과값이 여러개 값일 경우 사용
+--EX) IN (값1, 값2, 값3, ...)
+    SELECT count(*)
+      FROM employees
+     WHERE department_id IN ( SELECT department_id
+                                FROM departments
+                               WHERE parent_id IS NULL);
+--IN 대신 = 써도 이 경우엔 같은 결과 출력
+-- 관계연산자(> ,<, >=, <=, =, !=) 사용 시 서브쿼리 결과 값이 단일값이어야 한다(값이 하나를 의미)
+--서브쿼리 값이 여러개로 반환되면 에러 발생
+    SELECT count(*)
+      FROM employees
+     WHERE department_id = ( SELECT department_id
+                                FROM departments
+                               WHERE parent_id IS NULL);
+                               
+--유형3> 서브쿼리의 결과가 동시에 2개 이상의 컬럼 값을 갖는 경우 
+--비교시 2개의 컬럼 값은 동시에 만족이 되어야 함, 컬럼의 개수와 타입 일치(호환) 필요
+-- job_history 테이블에 있는 employee_id, job_id 두 값과 같은 건을 사원 테이블에서 찾는 쿼리
+    SELECT employee_id, emp_name, job_id
+      FROM employees
+     WHERE (employee_id, job_id ) IN ( SELECT employee_id, job_id
+                                        FROM job_history);
+
+--서브 쿼리는 SELECT문 뿐만 아니라 다음과 같이 UPDATE문, DELETE문에서도 사용할 수 있다.
+--<전 사원의 급여를 평균 금액으로 갱신>
+ UPDATE employees
+SET salary = ( SELECT AVG(salary) FROM employees );
+
+--<평균 급여보다 많이 받는 사원 삭제> 실행 X
+DELETE employees
+WHERE salary >= ( SELECT AVG(salary) FROM employees );
+
+
+/*
+연관성 있는 서브 쿼리
+메인 쿼리와의 연관성이 있는 서브 쿼리, 즉 메인 테이블과 조인 조건이 걸린 서브 쿼리
+*/
+--메인 쿼리(27개 데이터) -> 서브 쿼리의 조건식에 참조 (a)
+--EXISTS(SELECT문) : ()안의 SELECT문의 결과가 존재 하면 TRUE, 존재하지 않으면 FALSE
+--메인쿼리의 테이블의 a.department_id컬럼의 데이터 27개를 서브 쿼리에서 하나씩 비교하여 
+--EXISTS(SELECT문)데이터 존재하면 메인 쿼리로 데이터행 반환
+--                      존재하지 않으면 버려진다
+--메인 쿼리에서 돌려받은 데이터행으로 결과 출력
+--1의 의미는 EXISTS의 조건식이 TRUE일 경우 데이터 존재한다는 의미로 EXISTS()함수에서 사용시 TRUE로 해석
+/*
+메인 쿼리에서 사용된 부서 테이블의 부서번호와 job_history 테이블의 부서번호가 같은 건을 조회하고 있다. 
+또한 EXISTS 연산자를 사용해서 서브 쿼리 내에 조인 조건이 포함되어 있다. 
+따라서 결과는 job_history 테이블에 있는 부서만 조회
+*/
+SELECT a.department_id, a.department_name
+      FROM departments a
+     WHERE EXISTS ( SELECT 1 --데이터가 존재한다는 의미로 작성
+                      FROM job_history b
+                     WHERE 50 = b.department_id ); --()안에는 a가 없음-> 에러-> 메인 쿼리에서 참조하고 조건이 포함
+                     
+                     
+--1) SELECT절의 컬럼 위치에 서브쿼리가 존재
+SELECT a.employee_id,
+       ( SELECT b.emp_name
+           FROM employees b
+           WHERE a.employee_id = b.employee_id) AS emp_name,
+       a.department_id,
+       ( SELECT b.department_name
+            FROM departments b
+            WHERE a.department_id = b.department_id) AS dep_name
+FROM job_history a;
+/*
+SELECT a.employee_id,
+       a.department_id,
+FROM job_history a;
+이게 메인쿼리
+( SELECT b.emp_name
+    FROM employees b
+  WHERE a.employee_id = b.employee_id) AS emp_name,
+  위에서 일치하는 것만,
+( SELECT b.department_name
+    FROM departments b
+  WHERE a.department_id = b.department_id) AS dep_name
+  위에서 일치하는 것만
+  전체적으로 출력
+  */
+  
+--2)WHERE절에 서브쿼리가 사용
+SELECT a.department_id, a.department_name
+FROM departments a
+WHERE EXISTS 
+    ( SELECT 1
+      FROM employees b
+      WHERE a.department_id = b.department_id --→ ①
+       AND b.salary > ( SELECT AVG(salary)-- → ②
+       FROM employees )
+      );
+     
+     
+--보충
+/*테이블 조인 3개*/
+--오라클 INNER JOIN
+SELECT *
+FROM EMPLOYEES E, DEPARTMENTS D, JOB_HISTORY JH
+WHERE d.department_id = e.department_id
+AND d.department_id = jh.department_id;
+
+--ANSI INNER JOIN
+SELECT *
+FROM EMPLOYEES E INNER JOIN DEPARTMENTS D ON d.department_id = e.department_id
+                 INNER JOIN JOB_HISTORY JH ON d.department_id = jh.department_id;
+                 
+                 
+--3) FROM절에 서브쿼리가 사용 : 연관성이 없는 서브쿼리 : 인라인 뷰
+/*
+인라인 뷰
+FROM 절에 사용하는 서브 쿼리를 인라인 뷰InlineView 라고 한다. 
+원래 FROM 절에는 테이블이나 뷰가 오는데, 
+서브 쿼리를 FROM 절에 사용해 하나의 테이블이나 뷰처럼 사용할 수 있다.
+*/
+SELECT a.employee_id, a.emp_name, b.department_id, b.department_name
+FROM employees a,
+    departments b,
+    ( SELECT AVG(c.salary) AS avg_salary
+       FROM departments b,
+            employees c
+        WHERE b.parent_id = 90  -- 기획부
+            AND b.department_id = c.department_id ) d
+WHERE a.department_id = b.department_id
+   AND a.salary > d.avg_salary;
+
+--2번예제- 테이블 또는 뷰 생성 안돼서 실행 X 구조만 보기  
+SELECT a.*
+FROM ( SELECT a.sales_month, ROUND(AVG(a.amount_sold)) AS month_avg
+       FROM sales a,
+             customers b,
+             countries c
+        WHERE a.sales_month BETWEEN '200001' AND '200012'
+          AND a.cust_id = b.CUST_ID
+          AND b.COUNTRY_ID = c.COUNTRY_ID
+          AND c.COUNTRY_NAME = 'Italy' -- 이탈리아
+        GROUP BY a.sales_month
+           )  a,
+      ( SELECT ROUND(AVG(a.amount_sold)) AS year_avg
+        FROM sales a,
+             customers b,
+             countries c
+        WHERE a.sales_month BETWEEN '200001' AND '200012'
+          AND a.cust_id = b.CUST_ID
+          AND b.COUNTRY_ID = c.COUNTRY_ID
+          AND c.COUNTRY_NAME = 'Italy' -- 이탈리아
+           ) b
+WHERE a.month_avg > b.year_avg ;
+
+/*
+셀프 조인
+서로 다른 두 테이블이 아닌 동일한 한 테이블을 사용해 조인하는 방법
+*/
+SELECT a.employee_id, a.emp_name, b.employee_id, b.emp_name, a.department_id
+FROM employees a,
+     employees b --같은 테이블이지만 별칭이 다르기 때문에 메모리 상에선 각각 a, b로 관리하여 문제 X
+WHERE a.employee_id < b.employee_id......①
+   AND a.department_id = b.department_id
+   AND a.department_id = 20;
