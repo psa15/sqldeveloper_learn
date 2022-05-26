@@ -19,70 +19,102 @@ WHERE ENAME LIKE '%T%';​
 SELECT ROUND(AVG(SAL),2) AS 평균급여 FROM EMP;
 ​
 -- 5. 각 부서별 평균 급여를 구하세요. 소수 둘째자리 반올림표현 (GROUP BY)
-
-​
-
-​
+SELECT DEPTNO, ROUND(AVG(SAL),2) AS 평균급여 
+FROM EMP
+GROUP BY DEPTNO;​
 
 -- 6. 각 부서별 평균급여, 전체급여, 최고급여, 최저급여를 구하여 평균급여가 높은 순으로 출력. 평균은 소수 둘째자리 반올림표현
-
+SELECT DEPTNO, ROUND(AVG(SAL),2) AS 평균급여, SUM(SAL)전체급여, MAX(SAL) 최고급여, MIN(SAL) 최소급여
+FROM EMP
+GROUP BY DEPTNO
+ORDER BY AVG(SAL) DESC;
 ​
-
-​
-
 -- 7. 20번 부서의 최고 급여보다 많은 사원의 사원번호, 사원명, 급여를 출력
-
-​
-
-​
+SELECT empno, ENAME, SAL
+FROM EMP
+WHERE SAL > (SELECT MAX(SAL) FROM EMP WHERE DEPTNO = 20);
 
 -- 8. SMITH 와 같은 부서에 속한 사원들의 평균급여보다 큰 급여를 받는 모든 사원의 사원명, 급여를 출력
+--SMITH 와 같은 부서에 속한 사원들의 평균급여
+SELECT AVG(SAL)
+FROM EMP
+WHERE DEPTNO = (SELECT DEPTNO FROM EMP WHERE ENAME = 'SMITH');
+--2558.3333333
 
-​
+--SMITH 와 같은 부서에 속한 사원들의 평균급여보다 큰 급여를 받는 모든 사원의 사원명, 급여
 
-​
+SELECT ename, SAL
+FROM EMP
+WHERE SAL > (SELECT AVG(SAL)
+                FROM EMP
+                WHERE DEPTNO = (SELECT DEPTNO FROM EMP WHERE ENAME = 'SMITH')
+             );
 
 -- 9. 회사내의 최소급여와 최대급여의 차이를 구하세요. 
-
+SELECT (MAX(SAL) - MIN(SAL)) AS 급여차이
+FROM EMP;
 ​
-
-​
-
 -- 10. SCOTT 의 급여에서 1000 을 뺀 급여보다 적게 받는 사원의 이름, 급여를 출력.
-
+--SCOTT 의 급여에서 1000 을 뺀 급여
+SELECT ename, SAL
+FROM EMP
+WHERE SAL < (SELECT (SAL - 1000) AS 급여변동 
+                FROM EMP
+                WHERE ENAME = 'SCOTT');
 ​
 
 ​
 
 -- 11. JOB이 MANAGER인 사원들 중 최소급여를 받는 사원보다 급여가 적은 사원이름, 급여를 출력
+--JOB이 MANAGER인 사원들 중 최소급여를 받는 사원의 급여
+SELECT MIN(SAL) 
+FROM EMP
+WHERE JOB = 'MANAGER';
 
+--JOB이 MANAGER인 사원들 중 최소급여를 받는 사원보다 급여가 적은 사원이름, 급여를 출력
+SELECT ename, SAL
+FROM EMP
+WHERE SAL < (SELECT MIN(SAL) FROM EMP WHERE JOB = 'MANAGER');
 ​
-
-​
-
 -- 12. 이름이 S로 시작하고 마지막글자가 H인 사원의 이름을 출력
-
+SELECT ENAME 
+FROM EMP
+WHERE ENAME LIKE 'S%H';
 ​
-
-​
-
 -- 13. WARD 가 소속된 부서 사원들의 평균 급여보다, 급여가 높은 사원의 이름,급여를 출력.
+--WARD 가 소속된 부서 사원들의 평균 급여
+SELECT AVG(SAL)
+FROM EMP
+WHERE DEPTNO = (SELECT DEPTNO FROM EMP WHERE ENAME = 'WARD');
 
+--WARD 가 소속된 부서 사원들의 평균 급여보다, 급여가 높은 사원의 이름,급여
+SELECT ename, SAL
+FROM EMP
+WHERE SAL > (SELECT AVG(SAL)
+                FROM EMP
+             WHERE DEPTNO = (SELECT DEPTNO FROM EMP WHERE ENAME = 'WARD')
+            );
 ​
-
-​
-
 -- 14-1. EMP테이블의 모든 사원수를 출력
-
+SELECT COUNT(*) FROM EMP;
 ​
-
-​
-
 -- 15. 업무별(JOB) 사원수를 출력
-
+SELECT JOB, COUNT(*)
+FROM EMP
+GROUP BY JOB;
 ​
-
-​
-
 -- 16. 최소급여를 받는 사원과 같은 부서의 모든 사원명을 출력
+--최소급여를 받는 사원
+SELECT MIN(SAL) FROM EMP;
+--최소급여를 받는 사원의 부서
+SELECT DEPTNO FROM EMP
+WHERE SAL = (SELECT MIN(SAL) FROM EMP);
+
+--최소급여를 받는 사원과 같은 부서의 모든 사원명을 출력
+SELECT ENAME
+FROM EMP
+WHERE DEPTNO = (SELECT DEPTNO FROM EMP
+                WHERE SAL = (SELECT MIN(SAL) FROM EMP)
+                );
+
 [출처] sql 기본쿼리 연습문제 2 (비공개 카페)

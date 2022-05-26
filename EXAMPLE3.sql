@@ -1,0 +1,109 @@
+-- 관리자(sys, system ) 으로 접속하여, 학습용 계정인 scott 계정을 비밀번호및 활성화 적용 후
+-- scott계정 접속 후 사용
+-- 사용문법이 대부분 JOIN, SUB QUERY 문법위주 연습.
+
+-- 1. 업무(JOB)가 MANAGER인 사원의 이름, 부서명, 입사일을 출력
+SELECT ENAME, dname,HIREDATE
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE JOB = 'MANAGER';
+
+-- 2. 사원명이 WARD인 사원의 급여, 부서번호, 부서위치, 커미션을 출력
+SELECT SAL, EMP.DEPTNO, loc,COMM
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE ENAME = 'WARD';
+​
+-- 3. 30번 부서에 속하는 사원의 이름, 부서번호, 부서위치를 출력
+SELECT ENAME, EMP.DEPTNO, loc
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE EMP.DEPTNO = 30;
+​
+-- 4-1. 급여가 1250을 초과, 3000이하인 사원의 이름, 급여, 부서명을 출력
+SELECT ename, SAL, DNAME
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE SAL > 1250 AND SAL <= 3000;
+​
+-- 4-2. 급여가 1250이상 3000 이하인 사원의이름, 급여(BETWEEN 사용)
+SELECT ename, SAL
+FROM EMP
+WHERE SAL BETWEEN 1250 AND 3000
+ORDER BY SAL;​
+
+-- 5. 커미션이 0 인 사원의 이름, 부서위치, 커미션을 출력
+SELECT ENAME, LOC, COMM
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE COMM = 0;
+​
+-- 6.커미션 계약을 하지않은 사원의 이름, 부서명을 출력
+SELECT ENAME, DEPT.dname
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO
+AND COMM IS NULL;
+
+-- 7. 입사일이 81/06/09보다 늦은 사원이 이름, 부서위치, 입사일 출력(입사일 오름차순)
+SELECT ENAME, DEPT.LOC, HIREDATE
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE HIREDATE > '1981/06/09'
+ORDER BY HIREDATE;
+​
+-- 8. 모든 사원의 급여마다 1000을 더한 급여액, 사원명, 급여, 부서명을 출력
+SELECT (SAL + 1000) SAL_PLUS, ENAME, SAL, DEPT.DNAME
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO;
+​
+-- 9. FORD의 입사일, 부서명을 출력
+SELECT HIREDATE, DNAME
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO
+AND ENAME = 'FORD';
+​
+-- 10. 사원명이 ALLEN인 사원의 급여, 부서번호, 부서위치를 출력
+SELECT SAL, EMP.DEPTNO, LOC
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE ENAME = 'ALLEN';
+​
+-- 11. ALLEN의 급여보다 높은 급여를 받는 사원의 사원명, 부서명, 부서위치, 급여를 출력
+SELECT ENAME, DNAME, LOC, SAL
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = DEPT.DEPTNO
+WHERE SAL > (SELECT SAL FROM EMP WHERE ENAME = 'ALLEN');
+​
+-- 12. 가장 높은/낮은 커미션을 구하세요.
+SELECT MAX(COMM), MIN(COMM)
+FROM EMP;
+​
+-- 13. 가장 높은 커미션을 받는 사원의 이름, 부서명을 구하세요.
+SELECT ENAME, DNAME
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO
+AND COMM = (SELECT MAX(COMM)FROM EMP);
+​
+-- 14. JOB이 CLERK 인 사원들의 급여의 합을 구하세요
+SELECT SUM(SAL) FROM EMP
+WHERE JOB = 'CLERK';
+​
+-- 15. JOB 이 CLERK 인 사원들의 급여의 합보다 급여가 많은 사원이름, 부서명을 출력
+SELECT ENAME, DNAME
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO
+AND SAL > (SELECT SUM(SAL) FROM EMP
+            WHERE JOB = 'CLERK');
+​
+
+​
+
+-- 16. JOB이 CLERK인 사원들의 급여와 같은 급여를 받는 사원의 이름,부서명,급여를 출력(급여가 높은순으로 출력)
+SELECT ename, DNAME, SAL
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = DEPT.DEPTNO
+AND SAL IN(SELECT SAL FROM EMP
+            WHERE JOB = 'CLERK')
+ORDER BY SAL DESC;
+​
+[출처] sql 기본쿼리 연습문제 3 (비공개 카페)
