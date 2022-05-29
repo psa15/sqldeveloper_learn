@@ -114,34 +114,49 @@ AND HIREDATE = (SELECT MIN(HIREDATE) FROM EMP
 
 -- 12. ALLEN의 부서명을 출력
 SELECT DNAME
-F
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = dept.deptno
+WHERE ENAME = 'ALLEN';
 ​
-
-​
-
 -- 13. 이름에 J가 들어가는 사원들 중, 급여가 가장 높은 사원의 사원번호, 이름, 부서명, 급여, 부서위치를 출력
+SELECT ENAME
+FROM EMP
+WHERE ENAME LIKE '%J%';
 
+SELECT MAX(SAL) FROM EMP
+WHERE ENAME IN (SELECT ENAME
+                    FROM EMP
+                WHERE ENAME LIKE '%J%');
+
+SELECT empno, ENAME, DNAME, SAL, LOC
+FROM EMP, DEPT
+WHERE EMP.DEPTNO = dept.deptno
+AND SAL = (SELECT MAX(SAL) FROM EMP
+            WHERE ENAME IN (SELECT ENAME
+                                FROM EMP
+                            WHERE ENAME LIKE '%J%'));
 ​
-
-​
-
-​
-
-​
-
 -- 14. 두번째로 많은 급여를 받는 사원의 이름과 부서명,급여를 출력
-
-​
-
-​
-
+SELECT ENAME, DNAME, SAL
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = dept.deptno
+WHERE SAL = (SELECT MAX(SAL) FROM EMP
+                WHERE SAL < (SELECT MAX(SAL) FROM EMP));
 ​
 
 -- 15. 입사일이 2번째로 빠른 사원의 부서명과 이름, 입사일을 출력
-
-​
-
+SELECT DNAME, ENAME, HIREDATE
+FROM EMP INNER JOIN DEPT
+ON EMP.DEPTNO = dept.deptno
+WHERE HIREDATE = (SELECT MIN(HIREDATE) FROM EMP
+                WHERE HIREDATE > (SELECT MIN(HIREDATE) FROM EMP));
 ​
 
 -- 16. DALLAS에 위치한 부서의 사원 중 최대 급여를 받는 사원의 급여에서 최소 급여를 받는 사원의 급여를 뺀 결과를 출력
+SELECT DEPTNO FROM dept WHERE LOC = 'DALLAS';
+
+SELECT (SELECT MAX(SAL) FROM EMP WHERE DEPTNO = (SELECT DEPTNO FROM dept WHERE LOC = 'DALLAS'))-(SELECT MIN(SAL) FROM EMP WHERE DEPTNO = (SELECT DEPTNO FROM dept WHERE LOC = 'DALLAS')) AS SAL
+FROM EMP
+WHERE ROWNUM = 1;
+
 [출처] sql 기본쿼리 연습문제 4 (비공개 카페)

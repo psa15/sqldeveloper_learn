@@ -831,7 +831,7 @@ BEGIN
     COMMIT;
 END;
 --TEST
-EXEC UDP_BOARD_UPDATE1(6, '프로시저 연습수정1','프로시저 코딩실습수정1',SYSDATE);
+EXEC UDP_BOARD_UPDATE1(1, '프로시저 연습수정1','프로시저 코딩실습수정1',SYSDATE);
 
 --3. BOARD테이블에 데이터 삭제하는 프로시저 생성 UDP_BOARD_DELETE
 CREATE OR REPLACE PROCEDURE UDP_BOARD_DELETE
@@ -865,7 +865,7 @@ BEGIN
 END;
 
 --프로시저 테스트
-EXEC UDP_BOARD_DELETE1(6);
+EXEC UDP_BOARD_DELETE1(1);
 
 --4-1. 강사님 답
 CREATE OR REPLACE PROCEDURE UDP_GET_WRITER
@@ -889,6 +889,7 @@ END;
 DECLARE
     vs_writer BOARD.WRITER%TYPE;
 BEGIN
-    UDP_GET_WRITER(7, vs_writer);
-    DBMS_OUPUT.PUT_LINE('WRITER: ' || vs_writer);
+    UDP_GET_WRITER(2, vs_writer);
+    --DBMS_OUPUT.PUT_LINE('WRITER: ' || vs_writer);
+    DBMS_OUTPUT.PUT_LINE('writer: ' || vs_writer);
 END;
