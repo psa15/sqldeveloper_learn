@@ -147,32 +147,122 @@ AND DEPARTMENT_ID = (SELECT DEPARTMENT_ID FROM
 
 --12. 2001~20003년사이에 입사한 직원의 이름(first_name), 입사일(hire_date), 관리자사번 (employee_id), 
 -- 관리자 이름(fist_name)을 조회합니다. 단, 관리자가 없는 사원정보도 출력 결과에 포함시켜 출력한다.
+first_name, HIRE_DATE, EMPLOYEE_ID
+a.first_name 직원이름, a.HIRE_DATE 직원입사일, b.EMPLOYEE_ID 관리자사번, b.first_name 관리자 이름
 
+SELECT a.first_name 직원이름, a.HIRE_DATE 직원입사일, b.EMPLOYEE_ID 관리자사번, b.first_name 관리자이름
+FROM EMPLOYEES a LEFT JOIN EMPLOYEES b
+ON a.MANAGER_ID = b.EMPLOYEE_ID
+WHERE TO_CHAR(a.HIRE_DATE, 'YYYY') BETWEEN 2001 AND  2003;
 
 --13. ‘Sales’ 부서에 속한 직원의 이름(first_name), 급여(salary), 부서이름(department_name)을 조회하시오. 
 -- 단, 급여는 100번 부서의 평균보다 적게 받는 직원 정보만 출력되어야 한다. 
+first_name, SALARY, DEPARTMENT_NAME
 
+SELECT first_name, SALARY, DEPARTMENT_NAME
+FROM EMPLOYEES e, DEPARTMENTS d
+WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+AND DEPARTMENT_NAME = 'Sales'
+AND SALARY < (SELECT AVG(SALARY) FROM EMPLOYEES WHERE DEPARTMENT_ID = 100);
+ 
 
 --14. Employees 테이블에서 입사한달(hire_date)별로 인원수를 조회하시오.
-
+SELECT TO_CHAR(HIRE_DATE, 'MM'), COUNT(*)
+FROM EMPLOYEES
+GROUP BY TO_CHAR(HIRE_DATE, 'MM')
+ORDER BY TO_CHAR(HIRE_DATE, 'MM');
 
 --15. 부서별 직원들의 최대, 최소, 평균급여를 조회하되, 
 -- 평균급여가 ‘IT’ 부서의 평균급여보다 많고, ‘Sales’ 부서의 평균보다 적은 부서 정보만 출력하시오. 
+SELECT DEPARTMENT_ID, MAX(SALARY), MIN(SALARY), AVG(SALARY)
+FROM EMPLOYEES
+GROUP BY DEPARTMENT_ID
+HAVING (AVG(SALARY) > (SELECT AVG(SALARY)
+                        FROM EMPLOYEES e, DEPARTMENTS d
+                        WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+                        AND DEPARTMENT_NAME = 'IT')
+        AND AVG(SALARY) < (SELECT AVG(SALARY)
+                        FROM EMPLOYEES e, DEPARTMENTS d
+                        WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+                        AND DEPARTMENT_NAME = 'Sales'));
+--위처럼 코드 치면 부서가 NULL인 사원도 나옴
 
+--NULL은 제외하려면 INNER JOIN 필요
+SELECT DEPARTMENT_NAME, MAX(e.SALARY), MIN(e.SALARY), AVG(e.SALARY)
+FROM EMPLOYEES e, DEPARTMENTS d
+WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY DEPARTMENT_NAME
+HAVING (AVG(SALARY) > (SELECT AVG(SALARY)
+                        FROM EMPLOYEES e, DEPARTMENTS d
+                        WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+                        AND DEPARTMENT_NAME = 'IT')
+        AND AVG(SALARY) < (SELECT AVG(SALARY)
+                        FROM EMPLOYEES e, DEPARTMENTS d
+                        WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+                        AND DEPARTMENT_NAME = 'Sales'));
 
 --16. 각 부서별로 직원이 한명만 있는 부서만 조회하시오. 
 -- 단, 직원이 없는 부서에 대해서는 ‘<신생부서>’라는 문자열이 출력되도록 하고,
 -- 출력결과는 다음과 같이 부서명이 내림차순 으로 정렬되어야한다. 
+SELECT DEPARTMENT_NAME, COUNT(*)
+FROM DEPARTMENTS d, EMPLOYEES e
+WHERE e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY DEPARTMENT_NAME
+HAVING COUNT(e.EMPLOYEE_ID) = 1;
+
+--직원이 없는 부서를 출력하려면 LEFT JOIN 사용
+SELECT DEPARTMENT_NAME, COUNT(*)
+FROM DEPARTMENTS d RIGHT JOIN EMPLOYEES e
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY DEPARTMENT_NAME;
+--부서명이 NULL인 데이터도 출력됨
+
+--부서명이 NULL인 데이터를 신생부서로
+SELECT NVL(DEPARTMENT_NAME,'<신생부서>') AS DEPARTMENT_NAME, COUNT(*)
+FROM DEPARTMENTS d RIGHT JOIN EMPLOYEES e
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY DEPARTMENT_NAME;
+
+--1명뿐인 부서 출력
+SELECT NVL(DEPARTMENT_NAME,'<신생부서>') AS DEPARTMENT_NAME, COUNT(*)
+FROM DEPARTMENTS d RIGHT JOIN EMPLOYEES e
+ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+GROUP BY DEPARTMENT_NAME
+HAVING COUNT(*) = 1
+ORDER BY DEPARTMENT_NAME;
+
+--=================ANSWER====================
+SELECT NVL(D.DEPARTMENT_NAME, '<신생부서>') AS DEPARTMENT_NAME , COUNT(*)
+FROM EMPLOYEES E LEFT JOIN DEPARTMENTS D
+ON E.DEPARTMENT_ID = D.DEPARTMENT_ID
+GROUP BY D.DEPARTMENT_NAME
+HAVING COUNT(*) = 1
+ORDER BY D.DEPARTMENT_NAME DESC;
 
 
 --17. 부서별 입사월별 직원수를 출력하시오. 
 -- 단, 직원수가 5명 이상인 부서만 출력되어야 하며 출력결과는 부서이름 순으로 한다.
+SELECT DEPARTMENT_NAME 부서, TO_CHAR(HIRE_DATE, 'MM') 입사월, COUNT(*)
+FROM EMPLOYEES e, DEPARTMENTS d
+WHERE e.DEPARTMENT_ID = d.department_id
+GROUP BY DEPARTMENT_NAME, TO_CHAR(HIRE_DATE, 'MM') 
+HAVING COUNT(*) >= 5
+ORDER BY DEPARTMENT_NAME;
+--TO_CHAR(E.HIRE_DATE, 'MON', 'NLS_DATE_LANGUAGE=ENGLISH') -> 1월을 JAN으로, 3월을 MAR 로 출력
 
 
 --18. 국가(country_name) 별 도시(city)별 직원수를 조회하시오. 
 -- 단, 부서에 속해있지 않은 직원 이 있기 때문에 106명의 직원만 출력이 된다. 
 -- 부서정보가 없는 직원은 국가명과 도시명 대신에 ‘<부서없음>’이 출력되도록 하여 107명 모두 출력되게 한다.
-
+SELECT c.country_name 국가별, loc.CITY 도시별, COUNT(*)
+FROM (SELECT EMPLOYEE_ID, NVL(DEPARTMENT_NAME, '<부서없음>'), NVL(LOCATION_ID, '<부서없음>')
+        FROM EMPLOYEES e LEFT JOIN DEPARTMENTS d
+            ON e.DEPARTMENT_ID = d.department_id) a,
+    COUNTRIES c, 
+    LOCATIONS loc
+WHERE a.LOCATION_ID = loc.LOCATION_ID
+AND loc.COUNTRY_ID = c.COUNTRY_ID
+GROUP BY c.country_name, loc.CITY;
 
 --19. 각 부서별 최대 급여자의 아이디(employee_id), 이름(first_name), 급여(salary)를 출력하시오. 
 -- 단, 최대 급여자가 속한 부서의 평균급여를 마지막으로 출력하여 평균급여와 비교할 수 있게 할 것.
