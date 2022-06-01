@@ -264,17 +264,80 @@ WHERE a.LOCATION_ID = loc.LOCATION_ID
 AND loc.COUNTRY_ID = c.COUNTRY_ID
 GROUP BY c.country_name, loc.CITY;
 
+--==============answer
+SELECT NVL(C.COUNTRY_NAME, '<부서없음>') AS COUNTRY_NAME, NVL(L.CITY, '<부서없음>') AS CITY, COUNT(*)
+
+FROM EMPLOYEES E LEFT JOIN DEPARTMENTS D ON E.DEPARTMENT_ID = D.DEPARTMENT_ID 
+
+                LEFT JOIN LOCATIONS L ON D.LOCATION_ID = L.LOCATION_ID --DEPARTMENTS랑 조인
+
+                LEFT JOIN COUNTRIES C ON L.COUNTRY_ID = C.COUNTRY_ID  --LOCATIONS랑 조인
+
+GROUP BY COUNTRY_NAME, CITY
+
+ORDER BY COUNTRY_NAME ASC, CITY ASC
+
+; 
+
+
 --19. 각 부서별 최대 급여자의 아이디(employee_id), 이름(first_name), 급여(salary)를 출력하시오. 
 -- 단, 최대 급여자가 속한 부서의 평균급여를 마지막으로 출력하여 평균급여와 비교할 수 있게 할 것.
+employee_id, FIRST_NAME, SALARY
 
+SELECT b.employee_id, b.FIRST_NAME, b.SALARY, a.AVG_SAL
+FROM (SELECT  MAX(SALARY) AS SAL, AVG(SALARY) AS AVG_SAL, e.DEPARTMENT_ID
+        FROM EMPLOYEES e INNER JOIN DEPARTMENTS d
+        ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+        GROUP BY d.DEPARTMENT_ID) a
+INNER JOIN EMPLOYEES b
+ON a.DEPARTMENT_ID = b.DEPARTMENT_ID
+AND a.SAL = b.SALARY;
+
+
+SELECT E.EMPLOYEE_ID, E.FIRST_NAME, A.SALARY, A.AVG
+
+FROM EMPLOYEES E, (SELECT E.DEPARTMENT_ID, MAX(E.SALARY) AS SALARY, TRUNC(AVG(E.SALARY),2) AS AVG
+                    FROM EMPLOYEES E, DEPARTMENTS D
+                    WHERE E.DEPARTMENT_ID = D.DEPARTMENT_ID
+                    GROUP BY E.DEPARTMENT_ID
+                    ) A
+WHERE E.SALARY = A.SALARY 
+AND E.DEPARTMENT_ID = A.DEPARTMENT_ID
+ORDER BY E.EMPLOYEE_ID ASC;
 
 --20. 커미션(commission_pct)별 직원수를 조회하시오. 
 -- 커미션은 아래실행결과처럼 0.2, 0.25는 모두 .2로, 0.3, 0.35는 .3 형태로 출력되어야 한다. 
 -- 단, 커미션 정보가 없는 직원들도 있는 데 커미션이 없는 직원 그룹은 ‘<커미션 없음>’이 출력되게 한다.
+SELECT NVL(TO_CHAR(TRUNC(commission_pct,1)),'<커미션 없음>') AS COMM, COUNT(*)
+FROM EMPLOYEES
+GROUP BY TO_CHAR(TRUNC(commission_pct,1))
+ORDER BY TO_CHAR(TRUNC(commission_pct,1));
 
+--============ANSWER===========
+SELECT 
+NVL(TO_CHAR(TRUNC(E.COMMISSION_PCT,1)), '<커미션없음>') AS COMMISSION, COUNT(*)
+
+FROM 
+EMPLOYEES E 
+
+GROUP BY NVL(TO_CHAR(TRUNC(E.COMMISSION_PCT,1)), '<커미션없음>')
+ORDER BY NVL(TO_CHAR(TRUNC(E.COMMISSION_PCT,1)), '<커미션없음>') DESC;
 
 --21. 커미션(commission_pct)을 가장 많이 받은 상위 4명의 부서명(department_name), 
 -- 직원명 (first_name), 급여(salary), 커미션(commission_pct) 정보를 조회하시오. 
 -- 출력결과는 커미션 을 많이 받는 순서로 출력하되 동일한 커미션에 대해서는 급여가 높은 직원이 먼저 출력 되게 한다.
+SELECT *
+FROM (SELECT first_name, SALARY, COMMISSION_PCT
+        FROM EMPLOYEES
+        WHERE COMMISSION_PCT IS NOT NULL
+        ORDER BY COMMISSION_PCT DESC, SALARY DESC)
+WHERE ROWNUM <= 4;
 
-
+--==============ANSWER===========
+SELECT * 
+FROM(SELECT D.DEPARTMENT_NAME, E.FIRST_NAME, E.SALARY, E.COMMISSION_PCT
+    FROM EMPLOYEES E, DEPARTMENTS D
+    WHERE E.DEPARTMENT_ID = D.DEPARTMENT_ID
+    ORDER BY E.COMMISSION_PCT DESC NULLS LAST, E.SALARY DESC
+    )
+WHERE ROWNUM <= 4;
