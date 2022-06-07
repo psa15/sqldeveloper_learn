@@ -1,0 +1,16 @@
+DROP TABLE MEMBER;
+
+CREATE TABLE MEMBER
+(
+    USERID      VARCHAR2(15)    PRIMARY KEY,
+    PASSWD      VARCHAR2(15)    NOT NULL,
+    USERNAME    VARCHAR2(30)    NOT NULL,
+    ADDR        VARCHAR2(100)    NOT NULL,
+    TEL         VARCHAR2(30)    NOT NULL,
+    REG_DATE    DATE DEFAULT SYSDATE
+);
+userid, PASSWD, USERNAME, ADDR, TEL
+
+--상세페이지
+select userid, USERNAME, ADDR, TEL, reg_date from member
+WHERE USERID = '선택한 전자우편 주소';
