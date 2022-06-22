@@ -87,7 +87,7 @@ FROM(
     FROM tbl_board
     WHERE ROWNUM <= (1 * 10)
 )
-WHERE rn >= ((1-1) * 10); --RN이 10보다 작고 0보다 큰 값
+WHERE rn > ((1-1) * 10); --RN이 10보다 작고 0보다 큰 값
 --PAGENUM = 2, AMOUNT = 10 (AMOUNT는 항상 고정)
 SELECT rn, bno, title, content, writer, regdate
 FROM(
